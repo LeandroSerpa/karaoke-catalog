@@ -75,9 +75,9 @@ HTML_TEMPLATE = """
             position: relative;
             overflow: hidden;
         }
-        /* O Desenho do Microfone (Feito em código para não pesar) */
+        /* O Desenho do LEÃOZINHO COM MICROFONE (SVG Embutido) */
         .mic-icon {
-            width: 80px; height: 80px;
+            width: 100px; height: 100px; /* Um pouco maior para destacar o leão */
             margin-bottom: 10px;
             fill: var(--accent);
             filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
@@ -168,9 +168,9 @@ HTML_TEMPLATE = """
             <i :class="isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill'"></i>
         </button>
         
-        <svg class="mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+        <svg class="mic-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path d="M404.2 134.6C389.9 63.8 325.8 16 256 16S122.1 63.8 107.8 134.6c-35 8.6-60.6 40.2-60.6 77.4 0 44.2 35.8 80 80 80h13.6c14.3 47.4 58.6 82 110.2 82s95.9-34.6 110.2-82H400c44.2 0 80-35.8 80-80 0-37.2-25.6-68.8-60.6-77.4zM256 352c-33.6 0-63.3-19.2-78.7-48h157.4c-15.4 28.8-45.1 48-78.7 48zm-64-176c0-17.7 14.3-32 32-32s32 14.3 32 32-14.3 32-32 32-32-14.3-32-32zm128 0c0-17.7 14.3-32 32-32s32 14.3 32 32-14.3 32-32 32-32-14.3-32-32z"/>
+            <path d="M336 368h-16v-32c0-8.8-7.2-16-16-16h-96c-8.8 0-16 7.2-16 16v32h-16c-8.8 0-16 7.2-16 16v96c0 8.8 7.2 16 16 16h176c8.8 0 16-7.2 16-16v-96c0-8.8-7.2-16-16-16zm-48-64c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48s48 21.5 48 48v80c0 26.5-21.5 48-48 48z"/>
         </svg>
         
         <h1 class="app-title">Catálogo<br><span style="color:var(--accent)">Karaokê</span></h1>
