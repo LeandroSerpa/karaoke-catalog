@@ -10,10 +10,9 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
-# Procura por logo.png, logo.jpg, etc.
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE ---
+# --- LAYOUT HTML/VUE (SUPER APP VERSION) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -27,7 +26,7 @@ HTML_TEMPLATE = """
     <style>
         :root {
             --bg-dark: #050505;
-            --bg-gradient: linear-gradient(180deg, #000000 0%, #1a1a1a 100%);
+            --bg-gradient: linear-gradient(180deg, #000000 0%, #111 100%);
             --accent: #FFD700; /* Dourado */
             --card-bg: #1e1e1e;
             --text-main: #f0f0f0;
@@ -40,7 +39,7 @@ HTML_TEMPLATE = """
             padding-bottom: 80px; 
             font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
-            transition: 0.3s;
+            overflow-x: hidden;
         }
 
         /* TEMA CLARO */
@@ -51,27 +50,21 @@ HTML_TEMPLATE = """
             --text-main: #333333;
             color: #333;
         }
-        [data-bs-theme="light"] .card-music {
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        [data-bs-theme="light"] .card-music { border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         [data-bs-theme="light"] .title { color: #000; }
         [data-bs-theme="light"] .letter-btn { background: #fff; color: #333; border: 1px solid #ddd; }
         [data-bs-theme="light"] .letter-btn.active { color: #000; }
+        [data-bs-theme="light"] .modal-content { background: #fff; color: #333; }
 
         /* HEADER */
         .hero-header {
             background: linear-gradient(to bottom, #000 0%, #222 100%);
-            padding: 20px;
-            text-align: center;
+            padding: 20px; text-align: center;
             border-bottom: 3px solid var(--accent);
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-            border-radius: 0 0 25px 25px;
-            margin-bottom: 25px;
-            position: relative;
+            border-radius: 0 0 25px 25px; margin-bottom: 25px; position: relative;
         }
         
-        /* BOTÃO DE TEMA (SOL/LUA) - VOLTOU! */
         .theme-toggle {
             position: absolute; top: 15px; right: 15px;
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
@@ -81,7 +74,7 @@ HTML_TEMPLATE = """
         }
 
         .lion-img {
-            max-width: 140px; height: auto; display: block; margin: 0 auto 5px auto;
+            max-width: 130px; height: auto; display: block; margin: 0 auto 5px auto;
             filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
         }
 
@@ -101,34 +94,33 @@ HTML_TEMPLATE = """
         [data-bs-theme="light"] .form-control-lg { background: #fff; color: #333; border: 1px solid #ccc; }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
 
-        /* ABAS A-Z RESPONSIVAS (WRAP) */
+        /* ABAS A-Z + FAVORITOS */
         .alphabet-bar {
-            display: flex; 
-            flex-wrap: wrap; /* AQUI ESTÁ O SEGREDO: QUEBRA DE LINHA */
-            justify-content: center;
-            gap: 6px; 
-            padding: 15px 10px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 15px 10px;
         }
-        
         .letter-btn {
-            flex: 0 0 auto; 
-            width: 42px; height: 38px; /* Tamanho fixo para ficar bonito no grid */
+            flex: 0 0 auto; width: 42px; height: 38px;
             border-radius: 8px; border: 1px solid #333;
             background: #1a1a1a; color: #888; font-weight: bold; font-size: 0.9rem;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
-            line-height: 1;
+            cursor: pointer; transition: 0.2s; line-height: 1;
         }
-        .letter-btn-wide {
-            width: auto; padding: 0 15px; /* Botão TODOS fica mais largo */
-        }
-        
+        .letter-btn-wide { width: auto; padding: 0 15px; }
         .letter-btn.active {
             background: var(--accent); color: #000; border-color: var(--accent);
             transform: scale(1.1); font-weight: 900; box-shadow: 0 0 10px rgba(255,215,0,0.4);
         }
         .letter-count { font-size: 0.6rem; opacity: 0.8; font-weight: normal; margin-top: 2px; }
         .letter-btn.active .letter-count { font-weight: bold; }
+        
+        /* Botão de Favoritos */
+        .btn-fav-filter {
+            background: #330000; border-color: #ff4444; color: #ff4444;
+        }
+        .btn-fav-filter.active {
+            background: #ff4444; color: white; border-color: #ff4444;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
 
         /* LISTA */
         .card-music { 
@@ -136,6 +128,7 @@ HTML_TEMPLATE = """
             margin: 10px auto; padding: 12px 15px; border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
             max-width: 800px; border-left: 4px solid var(--accent);
+            position: relative;
         }
         .artist { color: var(--accent); font-weight: bold; font-size: 0.8rem; text-transform: uppercase; }
         [data-bs-theme="light"] .artist { color: #d4b106; }
@@ -147,6 +140,52 @@ HTML_TEMPLATE = """
             min-width: 75px; text-align: center;
         }
         .code-label { font-size: 0.55rem; text-align: center; opacity: 0.6; margin-top: 3px; text-transform: uppercase; }
+
+        /* AÇÕES DO CARD */
+        .card-actions {
+            display: flex; gap: 10px; align-items: center;
+        }
+        .btn-icon {
+            font-size: 1.2rem; color: #666; cursor: pointer; padding: 5px; transition: 0.2s;
+        }
+        .btn-icon.is-fav { color: #ff4444; animation: heartbeat 1s; }
+        @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+        /* MODAL (DETALHES DA MÚSICA) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px); animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            background: #1a1a1a; width: 90%; max-width: 500px;
+            border-radius: 20px; padding: 30px; text-align: center;
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+            position: relative; animation: slideUp 0.3s;
+        }
+        .close-modal {
+            position: absolute; top: 15px; right: 20px; font-size: 1.5rem;
+            color: #888; cursor: pointer; background: none; border: none;
+        }
+        .modal-code {
+            font-size: 3rem; font-weight: 900; color: white;
+            background: #0d6efd; display: inline-block;
+            padding: 10px 30px; border-radius: 15px; margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.4);
+        }
+        .modal-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; color: var(--text-main); }
+        .modal-artist { font-size: 1.2rem; color: var(--accent); text-transform: uppercase; margin-bottom: 30px; }
+        .btn-search-lyrics {
+            background: transparent; border: 1px solid var(--accent); color: var(--accent);
+            padding: 10px 20px; border-radius: 30px; text-decoration: none;
+            font-weight: bold; display: inline-block; transition: 0.2s;
+        }
+        .btn-search-lyrics:hover { background: var(--accent); color: black; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); } to { transform: translateY(0); } }
 
         /* PAGINAÇÃO */
         .pagination { justify-content: center; margin-top: 25px; display: flex; gap: 10px; align-items: center; }
@@ -165,6 +204,30 @@ HTML_TEMPLATE = """
 <body>
 <div id="app">
     
+    <div class="modal-overlay" v-if="modalVisible" @click.self="fecharModal">
+        <div class="modal-content">
+            <button class="close-modal" @click="fecharModal">&times;</button>
+            
+            <div class="modal-code" @click="copiar(musicaSelecionada.c)">{{ musicaSelecionada.c }}</div>
+            <div class="small text-muted mb-3">Toque para copiar</div>
+            
+            <h3 class="modal-title">{{ musicaSelecionada.m }}</h3>
+            <div class="modal-artist">{{ musicaSelecionada.a }}</div>
+            
+            <hr style="border-color: #444; margin: 20px 0;">
+            
+            <p class="text-muted small">
+                Se a letra estiver disponível no arquivo, apareceria aqui. 
+                Caso contrário, use o botão abaixo:
+            </p>
+            
+            <a :href="'https://www.google.com/search?q=letra+' + musicaSelecionada.a + '+' + musicaSelecionada.m" 
+               target="_blank" class="btn-search-lyrics">
+               <i class="bi bi-music-note-beamed"></i> Ver Letra Completa Online
+            </a>
+        </div>
+    </div>
+
     <div class="hero-header">
         <button class="theme-toggle" @click="toggleTheme">
             <i :class="isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill'"></i>
@@ -180,6 +243,11 @@ HTML_TEMPLATE = """
     </div>
 
     <div class="alphabet-bar">
+        <div class="letter-btn letter-btn-wide btn-fav-filter" :class="{active: filtroLetra === 'FAV'}" @click="filtrarLetra('FAV')">
+            <i class="bi bi-heart-fill"></i>
+            <span class="letter-count">{{ favoritos.length }}</span>
+        </div>
+
         <div class="letter-btn letter-btn-wide" :class="{active: filtroLetra === ''}" @click="filtrarLetra('')">
             TODOS
             <span class="letter-count">{{ db.length }}</span>
@@ -196,18 +264,35 @@ HTML_TEMPLATE = """
         </div>
     </div>
     
-    <div class="text-center mt-2 small opacity-50">{{ listaFiltrada.length }} músicas encontradas</div>
+    <div class="text-center mt-2 small opacity-50">
+        <span v-if="filtroLetra === 'FAV'">{{ favoritos.length }} músicas favoritas</span>
+        <span v-else>{{ listaFiltrada.length }} músicas encontradas</span>
+    </div>
 
     <div class="container pb-5">
         <div v-for="m in listaPaginada" :key="m.c" class="card-music">
-            <div style="flex: 1; padding-right: 10px;">
+            <div style="flex: 1; padding-right: 10px; cursor: pointer;" @click="abrirModal(m)">
                 <div class="artist">{{ m.a }}</div>
                 <div class="title">{{ m.m }}</div>
             </div>
-            <div @click="copiar(m.c)">
-                <div class="code-btn">{{ m.c }}</div>
-                <div class="code-label">Copiar</div>
+            
+            <div class="card-actions">
+                <i class="bi btn-icon" 
+                   :class="isFavorito(m.c) ? 'bi-heart-fill is-fav' : 'bi-heart'"
+                   @click.stop="toggleFavorito(m)"></i>
+                   
+                <i class="bi bi-eye-fill btn-icon" style="color: var(--accent)" @click.stop="abrirModal(m)"></i>
+
+                <div @click.stop="copiar(m.c)">
+                    <div class="code-btn">{{ m.c }}</div>
+                    <div class="code-label">Copiar</div>
+                </div>
             </div>
+        </div>
+        
+        <div v-if="filtroLetra === 'FAV' && favoritos.length === 0" class="text-center mt-5 text-muted">
+            <h3>💔 Nenhum favorito ainda</h3>
+            <p>Toque no coração ao lado das músicas para salvar aqui!</p>
         </div>
 
         <div class="pagination" v-if="totalPaginas > 1">
@@ -234,13 +319,20 @@ HTML_TEMPLATE = """
             pagina: 1, 
             porPagina: 50,
             isDark: true,
-            alfabeto: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+            alfabeto: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+            favoritos: [], // Lista de códigos favoritos
+            modalVisible: false,
+            musicaSelecionada: {}
         }},
         mounted() {
-            // Recupera o tema salvo
-            const saved = localStorage.getItem('theme');
-            if (saved === 'light') { this.isDark = false; }
+            // Recupera tema
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') { this.isDark = false; }
             this.applyTheme();
+
+            // Recupera favoritos
+            const savedFavs = localStorage.getItem('karaoke_favs');
+            if (savedFavs) { this.favoritos = JSON.parse(savedFavs); }
         },
         computed: {
             mapaContagem() {
@@ -248,12 +340,8 @@ HTML_TEMPLATE = """
                 this.db.forEach(m => {
                     if(m.a) {
                         const char = m.a.charAt(0).toUpperCase();
-                        // Se for número, agrupa em '0-9'
-                        if (/[0-9]/.test(char)) {
-                            map['0-9'] = (map['0-9'] || 0) + 1;
-                        } else {
-                            map[char] = (map[char] || 0) + 1;
-                        }
+                        if (/[0-9]/.test(char)) { map['0-9'] = (map['0-9'] || 0) + 1; } 
+                        else { map[char] = (map[char] || 0) + 1; }
                     }
                 });
                 return map;
@@ -261,18 +349,16 @@ HTML_TEMPLATE = """
             listaFiltrada() {
                 let res = this.db;
 
-                // Filtro por Letra ou Numero
-                if (this.filtroLetra) {
-                    if (this.filtroLetra === '0-9') {
-                        // Filtra tudo que começa com número
-                        res = res.filter(m => /^[0-9]/.test(m.a));
-                    } else {
-                        // Filtra por letra normal
-                        res = res.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra));
-                    }
+                // Filtro FAVORITOS
+                if (this.filtroLetra === 'FAV') {
+                    return res.filter(m => this.favoritos.includes(m.c));
                 }
 
-                // Filtro por Busca (Texto)
+                if (this.filtroLetra) {
+                    if (this.filtroLetra === '0-9') { res = res.filter(m => /^[0-9]/.test(m.a)); } 
+                    else { res = res.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra)); }
+                }
+
                 if (this.busca) {
                     const t = this.busca.toLowerCase();
                     res = res.filter(m => 
@@ -285,7 +371,6 @@ HTML_TEMPLATE = """
             },
             totalPaginas() { return Math.ceil(this.listaFiltrada.length / this.porPagina); },
             listaPaginada() {
-                // Paginação segura
                 if (this.listaFiltrada.length === 0) return [];
                 const i = (this.pagina - 1) * this.porPagina;
                 return this.listaFiltrada.slice(i, i + this.porPagina);
@@ -297,7 +382,7 @@ HTML_TEMPLATE = """
             filtrarLetra(l) { 
                 this.filtroLetra = l; 
                 this.busca = ''; 
-                this.pagina = 1; // Reseta para página 1 ao trocar filtro
+                this.pagina = 1; 
             },
             limparLetra() { 
                 if(this.busca) this.filtroLetra = ''; 
@@ -310,6 +395,26 @@ HTML_TEMPLATE = """
             },
             applyTheme() {
                 document.documentElement.setAttribute('data-bs-theme', this.isDark ? 'dark' : 'light');
+            },
+            // NOVOS MÉTODOS DE FAVORITOS
+            isFavorito(codigo) {
+                return this.favoritos.includes(codigo);
+            },
+            toggleFavorito(m) {
+                if (this.isFavorito(m.c)) {
+                    this.favoritos = this.favoritos.filter(code => code !== m.c);
+                } else {
+                    this.favoritos.push(m.c);
+                }
+                localStorage.setItem('karaoke_favs', JSON.stringify(this.favoritos));
+            },
+            // NOVOS MÉTODOS DO MODAL
+            abrirModal(m) {
+                this.musicaSelecionada = m;
+                this.modalVisible = true;
+            },
+            fecharModal() {
+                this.modalVisible = false;
             }
         }
     }).mount('#app');
