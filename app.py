@@ -12,9 +12,9 @@ app = Flask(__name__)
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
 
-# LINK CORRIGIDO: Leão Majestoso (Unsplash - Alta Qualidade)
-# Este link é direto e estável.
-URL_LEAO = "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=600&q=80"
+# 👇👇👇 COLE O LINK DA SUA IMAGEM AQUI EMBAIXO 👇👇👇
+# Eu coloquei um link de um Leão Mascote. Se não for esse, apague o link dentro das aspas e cole o seu!
+URL_LEAO = "https://cdn-icons-png.flaticon.com/512/3408/3408764.png" 
 
 # --- LAYOUT ÚNICO ---
 HTML_TEMPLATE = """
@@ -83,21 +83,15 @@ HTML_TEMPLATE = """
             margin-bottom: 20px;
         }
         
-        /* A FOTO DO LEÃO REAL */
+        /* ESTILO DA IMAGEM DO LEÃO */
         .lion-img {
-            width: 140px; height: 140px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 4px solid var(--accent);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+            width: 130px; height: 130px;
+            object-fit: contain; /* Garante que o desenho não fique cortado */
+            filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.6)); /* Brilho neon azul */
             margin-bottom: 10px;
-            animation: pulse 3s infinite;
+            transition: transform 0.3s;
         }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(56, 189, 248, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
-        }
+        .lion-img:hover { transform: scale(1.1) rotate(5deg); }
 
         .app-title {
             font-weight: 800; font-size: 1.8rem; margin: 0;
@@ -341,6 +335,7 @@ def obter_imagem_base64():
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         
+        # User-Agent para fingir ser um navegador
         req = urllib.request.Request(
             URL_LEAO, 
             headers={'User-Agent': 'Mozilla/5.0'}
@@ -348,7 +343,9 @@ def obter_imagem_base64():
         with urllib.request.urlopen(req, context=ctx) as response:
             dados = response.read()
             b64 = base64.b64encode(dados).decode('utf-8')
-            return f"data:image/jpeg;base64,{b64}"
+            # Detecta se é PNG ou JPG pelo link
+            tipo = "png" if "png" in URL_LEAO else "jpeg"
+            return f"data:image/{tipo};base64,{b64}"
     except Exception as e:
         print(f"Erro ao baixar imagem: {e}")
         return "https://via.placeholder.com/150"
