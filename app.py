@@ -22,21 +22,21 @@ HTML_TEMPLATE = """
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         :root {
-            /* Paleta Azul & Cinza Profissional */
             --bg-dark: #0f172a;
-            --bg-gradient-dark: linear-gradient(180deg, #0f172a 0%, #334155 100%);
+            --bg-gradient-dark: linear-gradient(180deg, #020617 0%, #1e293b 100%);
             
             --bg-light: #f8fafc;
             --bg-gradient-light: linear-gradient(180deg, #f1f5f9 0%, #cbd5e1 100%);
             
-            --card-dark: rgba(30, 41, 59, 0.95);
+            --card-dark: rgba(30, 41, 59, 0.85);
             --card-light: #ffffff;
             
             --text-dark: #f1f5f9;
             --text-light: #1e293b;
             
-            --accent: #38bdf8; /* Azul destaque */
-            --code-bg: #0284c7;
+            --accent: #38bdf8; /* Azul Neon */
+            --accent-glow: 0 0 15px rgba(56, 189, 248, 0.4);
+            --code-bg: #0369a1;
         }
 
         body { 
@@ -55,109 +55,136 @@ HTML_TEMPLATE = """
             background-image: var(--bg-gradient-light);
             color: var(--text-light);
         }
-        [data-bs-theme="light"] .card-music {
-            background: var(--card-light);
-            border: 1px solid #cbd5e1;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
+        [data-bs-theme="light"] .card-music { background: var(--card-light); border-color: #cbd5e1; }
         [data-bs-theme="light"] .title { color: #0f172a; }
-        [data-bs-theme="light"] .artist { color: #0369a1; }
-        [data-bs-theme="light"] .form-control-lg {
-            background: white; color: #333; border: 1px solid #cbd5e1;
-        }
+        [data-bs-theme="light"] .artist { color: #0284c7; }
+        [data-bs-theme="light"] .form-control-lg { background: white; color: #333; border-color: #cbd5e1; }
+        [data-bs-theme="light"] .letter-btn { background: white; color: #333; border: 1px solid #ddd; }
+        [data-bs-theme="light"] .letter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* HEADER COM IMAGEM SVG EMBUTIDA */
+        /* HEADER */
         .hero-header {
-            background: linear-gradient(135deg, #020617 0%, #1e293b 100%);
-            padding: 30px 20px;
+            background: linear-gradient(135deg, #020617 0%, #172554 100%);
+            padding: 25px 20px 10px 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             position: relative;
             overflow: hidden;
         }
-        /* O Desenho do LEÃOZINHO COM MICROFONE (SVG Embutido) */
-        .mic-icon {
-            width: 100px; height: 100px; /* Um pouco maior para destacar o leão */
-            margin-bottom: 10px;
+        
+        /* NOVO ÍCONE DE LEÃO (MAJESTOSO) */
+        .lion-icon {
+            width: 110px; height: 110px;
             fill: var(--accent);
-            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.6));
+            margin-bottom: 5px;
         }
 
         .app-title {
-            font-weight: 800; font-size: 1.8rem; margin: 0;
+            font-weight: 800; font-size: 1.6rem; margin: 0;
             text-transform: uppercase; letter-spacing: 2px;
-            color: white;
+            color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
         /* CONTROLES */
         .theme-toggle {
-            position: absolute; top: 20px; right: 20px;
+            position: absolute; top: 15px; right: 15px;
             background: rgba(255,255,255,0.1); border: none; 
-            color: white; width: 40px; height: 40px; border-radius: 50%;
+            color: white; width: 35px; height: 35px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            cursor: pointer; z-index: 20;
         }
 
         .search-container {
-            padding: 0 15px; margin-top: -25px; position: relative; z-index: 10;
+            padding: 0 15px; position: relative; z-index: 10;
+            margin-top: 15px;
         }
         .form-control-lg { 
-            background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(5px);
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1); 
-            color: white; border-radius: 12px; padding: 15px 20px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            color: white; border-radius: 12px; padding: 12px 20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 1rem;
         }
-        .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2); }
+        .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25); }
+
+        /* BARRA ALFABÉTICA (SCROLL HORIZONTAL) */
+        .alphabet-bar {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 15px;
+            -webkit-overflow-scrolling: touch; /* Suave no iPhone */
+            scrollbar-width: none; /* Firefox */
+        }
+        .alphabet-bar::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+        
+        .letter-btn {
+            flex: 0 0 auto;
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(30, 41, 59, 0.6);
+            color: #94a3b8;
+            font-weight: bold; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .letter-btn.active {
+            background: var(--accent);
+            color: #0f172a;
+            box-shadow: 0 0 10px var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
 
         /* LISTA */
         .card-music { 
             background: var(--card-dark); 
-            margin: 12px auto; padding: 15px 20px; border-radius: 10px; 
+            margin: 10px auto; padding: 12px 18px; border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
-            max-width: 800px; border-left: 4px solid var(--accent);
+            max-width: 800px; border-left: 3px solid var(--accent);
         }
-        .info { flex: 1; padding-right: 15px; }
+        .info { flex: 1; padding-right: 15px; overflow: hidden; }
         .artist { 
             color: var(--accent); font-weight: 700; font-size: 0.8rem; 
-            text-transform: uppercase; margin-bottom: 3px; 
+            text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .title { font-weight: 600; font-size: 1.1rem; line-height: 1.2; }
+        .title { font-weight: 600; font-size: 1rem; line-height: 1.2; color: inherit; }
 
         /* BOTÃO CÓDIGO */
         .code-btn {
             background: var(--code-bg); color: white;
-            padding: 8px 15px; border-radius: 6px;
-            font-weight: 700; font-size: 1.2rem;
-            text-align: center; min-width: 80px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            padding: 6px 12px; border-radius: 6px;
+            font-weight: 700; font-size: 1.1rem;
+            text-align: center; min-width: 75px; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .code-btn:active { transform: scale(0.95); }
-        .code-label { font-size: 0.6rem; margin-top: 4px; text-transform: uppercase; opacity: 0.7; text-align: center; }
+        .code-label { font-size: 0.55rem; margin-top: 3px; text-transform: uppercase; opacity: 0.6; text-align: center; }
 
-        .pagination { justify-content: center; margin-top: 30px; display: flex; gap: 10px; align-items: center; }
+        .pagination { justify-content: center; margin-top: 20px; display: flex; gap: 10px; align-items: center; }
         .btn-page { 
             width: 45px; height: 45px; border-radius: 8px; border: none; 
-            background: rgba(255,255,255,0.1); color: inherit; 
+            background: rgba(255,255,255,0.05); color: inherit; 
             font-size: 1.2rem; 
         }
-        .btn-page:hover:not(:disabled) { background: var(--accent); color: white; }
+        .btn-page:hover:not(:disabled) { background: var(--accent); color: #0f172a; }
         .btn-page:disabled { opacity: 0.3; }
 
         .footer-note { 
             text-align: center; margin-top: 40px; padding: 20px;
-            color: #64748b; font-size: 0.9rem; border-top: 1px solid rgba(255,255,255,0.05);
+            color: #64748b; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* BOTÃO DOWNLOAD FLUTUANTE */
         .fab-download {
-            position: fixed; bottom: 25px; right: 25px;
+            position: fixed; bottom: 20px; right: 20px;
             background: #10b981; color: white;
-            width: 65px; height: 65px; border-radius: 50%;
+            width: 60px; height: 60px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-            text-decoration: none; z-index: 1000; transition: 0.3s;
+            font-size: 1.6rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            text-decoration: none; z-index: 1000;
         }
-        .fab-download:hover { transform: translateY(-5px); background: #059669; }
     </style>
 </head>
 <body>
@@ -168,18 +195,25 @@ HTML_TEMPLATE = """
             <i :class="isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill'"></i>
         </button>
         
-        <svg class="mic-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-            <path d="M404.2 134.6C389.9 63.8 325.8 16 256 16S122.1 63.8 107.8 134.6c-35 8.6-60.6 40.2-60.6 77.4 0 44.2 35.8 80 80 80h13.6c14.3 47.4 58.6 82 110.2 82s95.9-34.6 110.2-82H400c44.2 0 80-35.8 80-80 0-37.2-25.6-68.8-60.6-77.4zM256 352c-33.6 0-63.3-19.2-78.7-48h157.4c-15.4 28.8-45.1 48-78.7 48zm-64-176c0-17.7 14.3-32 32-32s32 14.3 32 32-14.3 32-32 32-32-14.3-32-32zm128 0c0-17.7 14.3-32 32-32s32 14.3 32 32-14.3 32-32 32-32-14.3-32-32z"/>
-            <path d="M336 368h-16v-32c0-8.8-7.2-16-16-16h-96c-8.8 0-16 7.2-16 16v32h-16c-8.8 0-16 7.2-16 16v96c0 8.8 7.2 16 16 16h176c8.8 0 16-7.2 16-16v-96c0-8.8-7.2-16-16-16zm-48-64c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48s48 21.5 48 48v80c0 26.5-21.5 48-48 48z"/>
+        <svg class="lion-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path d="M167.4 266.3c15.8-5.7 30.6-13.4 44-22.9-10.7-18.4-17-39.7-17-62.4 0-33.8 13.9-64.4 36.3-86.5-12.7-16-24-34.1-33.5-54.2C178.6 68 160.8 98.7 146.9 133c-36.6 6.8-69.5 21.6-98.2 42.4 20.9 33 46 62.9 74.3 88.5 13.9-3.2 28.1-3.2 42.4 1.3.7.2 1.3.4 2 .6zM344.6 266.3c.7-.2 1.3-.4 2-.6 14.3-4.5 28.5-4.5 42.4-1.3 28.3-25.6 53.4-55.5 74.3-88.5-28.7-20.8-61.6-35.6-98.2-42.4-13.9-34.3-31.7-65-50.3-92.7-9.5 20.1-20.8 38.2-33.5 54.2 22.4 22.1 36.3 52.7 36.3 86.5 0 22.7-6.3 44-17 62.4 13.4 9.5 28.2 17.2 44 22.9zM256 225c27.6 0 50-22.4 50-50s-22.4-50-50-50-50 22.4-50 50 22.4 50 50 50zm137 99.4c-6.2-7.5-12.8-14.7-19.8-21.6-13.6 12-29.3 21.7-46.7 28.4 5.9 16.2 9.2 33.7 9.2 52 0 47-21.7 89-56 117.4 1.3.1 2.6.2 3.9.2 42 0 80.5-16.1 109.3-42.3.1 0 .1-.1.1-.1zM118.8 302.8c-7 6.9-13.6 14.1-19.8 21.6.1 0 .1.1.1.1 28.8 26.2 67.3 42.3 109.3 42.3 1.3 0 2.6-.1 3.9-.2-34.3-28.4-56-70.4-56-117.4 0-18.3 3.3-35.8 9.2-52-17.4-6.7-33.1-16.4-46.7-28.4zM256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 432c-39.7 0-76.3-13.7-105.7-36.7 8.3-43.1 46.1-75.3 91-75.3h29.5c44.9 0 82.7 32.2 91 75.3C332.3 418.3 295.7 432 256 432z"/>
         </svg>
         
         <h1 class="app-title">Catálogo<br><span style="color:var(--accent)">Karaokê</span></h1>
     </div>
 
     <div class="search-container">
-        <input type="text" class="form-control form-control-lg" v-model="busca" placeholder="🔍 Buscar música, cantor ou código..." @input="pagina=1">
-        <div class="text-center mt-2 small opacity-75">{{ listaFiltrada.length }} músicas carregadas</div>
+        <input type="text" class="form-control form-control-lg" v-model="busca" placeholder="🔍 Pesquisar música ou cantor..." @input="limparLetra()">
     </div>
+
+    <div class="alphabet-bar">
+        <div class="letter-btn" :class="{active: filtroLetra === ''}" @click="filtrarLetra('')">TODOS</div>
+        <div class="letter-btn" v-for="letra in alfabeto" :class="{active: filtroLetra === letra}" @click="filtrarLetra(letra)">
+            {{ letra }}
+        </div>
+    </div>
+    
+    <div class="text-center mt-2 small opacity-75">{{ listaFiltrada.length }} músicas encontradas</div>
 
     <div class="container">
         <div v-for="m in listaPaginada" :key="m.c" class="card-music">
@@ -216,9 +250,11 @@ HTML_TEMPLATE = """
         data() { return { 
             db: musicas, 
             busca: '', 
+            filtroLetra: '',
             pagina: 1, 
             porPagina: 50,
-            isDark: true
+            isDark: true,
+            alfabeto: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
         }},
         mounted() {
             const savedTheme = localStorage.getItem('theme');
@@ -229,9 +265,20 @@ HTML_TEMPLATE = """
         },
         computed: {
             listaFiltrada() {
-                if (!this.busca) return this.db;
-                const t = this.busca.toLowerCase();
-                return this.db.filter(m => m.a.toLowerCase().includes(t) || m.m.toLowerCase().includes(t) || m.c.includes(t));
+                let resultado = this.db;
+                
+                // Filtro por Letra (Abas)
+                if (this.filtroLetra) {
+                    resultado = resultado.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra));
+                }
+                
+                // Filtro por Texto (Busca)
+                if (this.busca) {
+                    const t = this.busca.toLowerCase();
+                    resultado = resultado.filter(m => m.a.toLowerCase().includes(t) || m.m.toLowerCase().includes(t) || m.c.includes(t));
+                }
+                
+                return resultado;
             },
             totalPaginas() { return Math.ceil(this.listaFiltrada.length / this.porPagina); },
             listaPaginada() {
@@ -242,6 +289,15 @@ HTML_TEMPLATE = """
         methods: {
             copiar(texto) { navigator.clipboard.writeText(texto).then(() => alert('Código ' + texto + ' copiado!')); },
             mudarPagina(d) { this.pagina += d; window.scrollTo(0, 0); },
+            filtrarLetra(letra) {
+                this.filtroLetra = letra;
+                this.busca = ''; // Limpa a busca ao clicar na letra
+                this.pagina = 1;
+            },
+            limparLetra() {
+                if(this.busca) this.filtroLetra = ''; // Tira a seleção da letra se digitar na busca
+                this.pagina = 1;
+            },
             toggleTheme() {
                 this.isDark = !this.isDark;
                 this.applyTheme();
@@ -290,20 +346,13 @@ CACHE_MUSICAS = processar_pdf()
 @app.route('/')
 def index():
     dados_json = json.dumps(CACHE_MUSICAS)
-    # Adiciona o botão de download apenas na versão online
-    btn_html = '<a href="/baixar" class="fab-download" title="Baixar App HTML"><i class="bi bi-download"></i></a>'
-    
-    return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
-                        .replace('__BOTAO_DOWNLOAD__', btn_html)
+    btn_html = '<a href="/baixar" class="fab-download" title="Baixar App"><i class="bi bi-download"></i></a>'
+    return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json).replace('__BOTAO_DOWNLOAD__', btn_html)
 
 @app.route('/baixar')
 def baixar():
     dados_json = json.dumps(CACHE_MUSICAS)
-    
-    # Remove o botão de download na versão final
-    html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
-                              .replace('__BOTAO_DOWNLOAD__', '')
-    
+    html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json).replace('__BOTAO_DOWNLOAD__', '')
     return Response(
         html_final,
         mimetype="text/html",
