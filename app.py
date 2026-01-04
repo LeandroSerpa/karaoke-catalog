@@ -10,10 +10,9 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
-# O sistema procura sua logo aqui
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE (VERSÃO FINAL - HIERARQUIA DE TEXTO) ---
+# --- LAYOUT HTML/VUE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -41,9 +40,9 @@ HTML_TEMPLATE = """
             font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
             overflow-x: hidden;
+            user-select: none;
         }
 
-        /* TEMA CLARO */
         [data-bs-theme="light"] body {
             --bg-dark: #f0f2f5;
             --bg-gradient: linear-gradient(180deg, #ffffff 0%, #e9ecef 100%);
@@ -93,7 +92,7 @@ HTML_TEMPLATE = """
         [data-bs-theme="light"] .form-control-lg { background: #fff; color: #333; border: 1px solid #ccc; }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
 
-        /* ABAS A-Z RESPONSIVAS */
+        /* FILTROS */
         .alphabet-bar {
             display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 15px 10px;
         }
@@ -115,7 +114,7 @@ HTML_TEMPLATE = """
         .btn-fav-filter { background: #330000; border-color: #ff4444; color: #ff4444; }
         .btn-fav-filter.active { background: #ff4444; color: white; border-color: #ff4444; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
 
-        /* CARD DE MÚSICA - ESTRUTURA E CORES */
+        /* CARD DE MÚSICA */
         .card-music { 
             background: var(--card-bg); 
             margin: 10px auto; padding: 15px 15px; border-radius: 10px; 
@@ -125,15 +124,15 @@ HTML_TEMPLATE = """
         
         .info-col {
             flex: 1; 
-            padding-right: 10px; 
+            padding-right: 15px; 
             display: flex; 
             flex-direction: column;
-            gap: 2px; /* Espaço entre as linhas */
+            gap: 2px;
         }
 
-        /* 1. NOME DO ARTISTA (Dourado) */
+        /* 1. ARTISTA (Dourado) */
         .music-artist {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--accent); 
             font-weight: 700;
             text-transform: uppercase;
@@ -141,44 +140,51 @@ HTML_TEMPLATE = """
         }
         [data-bs-theme="light"] .music-artist { color: #b89c08; }
 
-        /* 2. NOME DA MÚSICA (Branco) */
+        /* 2. MÚSICA (Branco) */
         .music-title {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.15rem;
+            font-weight: 700;
             color: #ffffff;
             line-height: 1.2;
+            margin-bottom: 2px;
+            white-space: normal;
         }
         [data-bs-theme="light"] .music-title { color: #000; }
 
-        /* 3. VER LETRA (Azul) */
-        .music-lyrics-link {
-            font-size: 0.8rem;
-            color: #4285F4; /* Azul Google */
-            text-decoration: none;
+        /* 3. TEXTO ESTÁTICO "Letra da música" */
+        .music-static-text {
+            font-size: 0.75rem;
+            color: #666;
             font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .music-lyrics-link:hover { text-decoration: underline; color: #69a1ff; }
-        .music-lyrics-link i { margin-left: 4px; font-size: 0.75rem; }
+        [data-bs-theme="light"] .music-static-text { color: #999; }
 
-        /* BOTÕES DIREITA */
+        /* AÇÕES (DIREITA) */
+        .card-actions { 
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            gap: 15px; 
+        }
+        
+        .btn-icon { 
+            font-size: 1.4rem; color: #555; transition: 0.2s; cursor: pointer; text-decoration: none;
+            padding: 5px;
+        }
+        .btn-icon:hover { color: var(--accent); transform: scale(1.1); }
+        .btn-icon.is-fav { color: #ff4444; animation: heartbeat 0.5s; }
+        
+        /* Botão Código */
+        .code-box-wrapper { cursor: pointer; text-align: center; }
         .code-btn {
             background: #0d6efd; color: white;
             padding: 8px 10px; border-radius: 6px; font-weight: 900; font-size: 1.1rem;
-            min-width: 75px; text-align: center; cursor: pointer;
+            min-width: 75px; 
         }
-        .code-label { font-size: 0.55rem; text-align: center; opacity: 0.6; margin-top: 3px; text-transform: uppercase; }
+        .code-label { font-size: 0.55rem; opacity: 0.6; margin-top: 3px; text-transform: uppercase; font-weight: bold; }
 
-        .card-actions { display: flex; gap: 15px; align-items: center; }
-        
-        .btn-icon { 
-            font-size: 1.4rem; color: #666; transition: 0.2s; cursor: pointer; text-decoration: none;
-        }
-        .btn-icon:hover { color: #ff4444; transform: scale(1.1); }
-        .btn-icon.is-fav { color: #ff4444; animation: heartbeat 0.5s; }
-        
         @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
         /* PAGINAÇÃO */
@@ -236,20 +242,22 @@ HTML_TEMPLATE = """
                 
                 <div class="music-title">{{ m.m }}</div>
                 
-                <a :href="'https://www.google.com/search?q=letra+' + m.a + '+' + m.m" 
-                   target="_blank" 
-                   class="music-lyrics-link">
-                   Ver letra da música <i class="bi bi-search"></i>
-                </a>
+                <div class="music-static-text">Letra da música</div>
             </div>
             
             <div class="card-actions">
+                
                 <i class="bi btn-icon" 
                    :class="isFavorito(m.c) ? 'bi-heart-fill is-fav' : 'bi-heart'"
                    @click="toggleFavorito(m)"
                    title="Favoritar"></i>
+                
+                <a :href="'https://www.google.com/search?q=letra+' + m.a + '+' + m.m" 
+                   target="_blank" 
+                   class="bi bi-search btn-icon" 
+                   title="Pesquisar Letra no Google"></a>
 
-                <div @click="copiar(m.c)">
+                <div class="code-box-wrapper" @click="copiar(m.c)">
                     <div class="code-btn">{{ m.c }}</div>
                     <div class="code-label">Copiar</div>
                 </div>
