@@ -40,7 +40,7 @@ HTML_TEMPLATE = """
             font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
             overflow-x: hidden;
-            user-select: none;
+            user-select: none; /* Bloqueia seleção de texto */
         }
 
         [data-bs-theme="light"] body {
@@ -114,7 +114,7 @@ HTML_TEMPLATE = """
         .btn-fav-filter { background: #330000; border-color: #ff4444; color: #ff4444; }
         .btn-fav-filter.active { background: #ff4444; color: white; border-color: #ff4444; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
 
-        /* CARD DE MÚSICA */
+        /* LISTA DE MÚSICAS */
         .card-music { 
             background: var(--card-bg); 
             margin: 10px auto; padding: 15px 15px; border-radius: 10px; 
@@ -122,6 +122,7 @@ HTML_TEMPLATE = """
             max-width: 800px; border-left: 4px solid var(--accent);
         }
         
+        /* ÁREA DE TEXTO (Esquerda) */
         .info-col {
             flex: 1; 
             padding-right: 15px; 
@@ -132,7 +133,7 @@ HTML_TEMPLATE = """
 
         /* 1. ARTISTA (Dourado) */
         .music-artist {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--accent); 
             font-weight: 700;
             text-transform: uppercase;
@@ -140,35 +141,40 @@ HTML_TEMPLATE = """
         }
         [data-bs-theme="light"] .music-artist { color: #b89c08; }
 
-        /* 2. MÚSICA (Branco) */
+        /* 2. MÚSICA (Branco - Destaque) */
         .music-title {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: #ffffff;
-            line-height: 1.2;
+            line-height: 1.25;
             margin-bottom: 2px;
-            white-space: normal;
+            white-space: normal; /* Quebra de linha permitida */
         }
         [data-bs-theme="light"] .music-title { color: #000; }
 
-        /* 3. TEXTO ESTÁTICO "Letra da música" */
-        .music-static-text {
+        /* 3. TRECHO DA LETRA (Cinza - Texto Puro) */
+        .music-lyrics-snippet {
             font-size: 0.75rem;
-            color: #666;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #777;
+            font-weight: 400;
+            font-style: italic;
+            white-space: normal;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Limita a 2 linhas se for muito grande */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-        [data-bs-theme="light"] .music-static-text { color: #999; }
+        [data-bs-theme="light"] .music-lyrics-snippet { color: #666; }
 
-        /* AÇÕES (DIREITA) */
+        /* AÇÕES (Direita) */
         .card-actions { 
             display: flex; 
             flex-direction: row; 
             align-items: center; 
-            gap: 15px; 
+            gap: 12px; 
         }
         
+        /* Botões de Ícone */
         .btn-icon { 
             font-size: 1.4rem; color: #555; transition: 0.2s; cursor: pointer; text-decoration: none;
             padding: 5px;
@@ -242,7 +248,8 @@ HTML_TEMPLATE = """
                 
                 <div class="music-title">{{ m.m }}</div>
                 
-                <div class="music-static-text">Letra da música</div>
+                <div class="music-lyrics-snippet" v-if="m.l">{{ m.l }}</div>
+                <div class="music-lyrics-snippet" v-else>Letra da música</div>
             </div>
             
             <div class="card-actions">
@@ -354,15 +361,32 @@ def processar_pdf():
         lista = []
         vistos = set()
         pattern = re.compile(r"(.+?)\s+(\d{4,5})\s+(.+)")
+        
         for page in reader.pages:
             texto = page.extract_text()
             if not texto: continue
             for linha in texto.split('\n'):
                 match = pattern.search(linha)
                 if match:
+                    artista_cru = match.group(1).strip()
+                    # Bloqueia "UM" e outros lixos comuns de cabeçalho
+                    if artista_cru.upper() == "UM" or len(artista_cru) < 2: continue
+                    
                     codigo = match.group(2).strip()
+                    
+                    # Tenta separar Título da Letra (quebra por espaço duplo se houver)
+                    resto = match.group(3).strip()
+                    partes = re.split(r'\s{2,}', resto, maxsplit=1)
+                    titulo = partes[0]
+                    letra_snippet = partes[1] if len(partes) > 1 else ""
+
                     if codigo not in vistos:
-                        lista.append({"a": match.group(1).strip(), "c": codigo, "m": match.group(3).strip()})
+                        lista.append({
+                            "a": artista_cru, 
+                            "c": codigo, 
+                            "m": titulo,
+                            "l": letra_snippet # Campo novo: Letra
+                        })
                         vistos.add(codigo)
         lista.sort(key=lambda x: x['a'].lower())
         return lista
