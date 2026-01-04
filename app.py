@@ -10,10 +10,10 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
-# O sistema procura sua logo aqui (nesta ordem de prioridade)
+# O sistema procura sua logo aqui
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE (VERSÃO FINAL 2.0) ---
+# --- LAYOUT HTML/VUE (VERSÃO FINAL - VISUAL AJUSTADO) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -40,7 +40,7 @@ HTML_TEMPLATE = """
             padding-bottom: 80px; 
             font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
-            overflow-x: hidden; /* Evita rolagem lateral */
+            overflow-x: hidden;
         }
 
         /* TEMA CLARO */
@@ -93,7 +93,7 @@ HTML_TEMPLATE = """
         [data-bs-theme="light"] .form-control-lg { background: #fff; color: #333; border: 1px solid #ccc; }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
 
-        /* ABAS A-Z RESPONSIVAS */
+        /* ABAS A-Z */
         .alphabet-bar {
             display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 15px 10px;
         }
@@ -115,17 +115,34 @@ HTML_TEMPLATE = """
         .btn-fav-filter { background: #330000; border-color: #ff4444; color: #ff4444; }
         .btn-fav-filter.active { background: #ff4444; color: white; border-color: #ff4444; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
 
-        /* LISTA */
+        /* LISTA DE MÚSICAS - AQUI MUDOU O VISUAL */
         .card-music { 
             background: var(--card-bg); 
             margin: 10px auto; padding: 12px 15px; border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
             max-width: 800px; border-left: 4px solid var(--accent);
         }
-        .artist { color: var(--accent); font-weight: bold; font-size: 0.8rem; text-transform: uppercase; }
-        [data-bs-theme="light"] .artist { color: #d4b106; }
-        .title { font-weight: 600; font-size: 1rem; color: var(--text-main); line-height: 1.2; }
         
+        /* Estilo do Título da Música (EM CIMA) */
+        .music-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff; /* Branco para destaque */
+            line-height: 1.2;
+            margin-bottom: 4px; /* Espaço para o texto de baixo */
+        }
+        [data-bs-theme="light"] .music-title { color: #000; }
+
+        /* Estilo do Artista/Texto (EM BAIXO) */
+        .music-artist {
+            font-size: 0.8rem;
+            color: var(--accent); /* Dourado */
+            font-weight: 600;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        [data-bs-theme="light"] .music-artist { color: #b89c08; }
+
         .code-btn {
             background: #0d6efd; color: white;
             padding: 8px 10px; border-radius: 6px; font-weight: 900; font-size: 1.1rem;
@@ -135,7 +152,6 @@ HTML_TEMPLATE = """
 
         .card-actions { display: flex; gap: 12px; align-items: center; }
         
-        /* Ícones */
         .btn-icon { 
             font-size: 1.3rem; color: #666; transition: 0.2s; cursor: pointer; text-decoration: none;
         }
@@ -193,9 +209,10 @@ HTML_TEMPLATE = """
 
     <div class="container pb-5">
         <div v-for="m in listaPaginada" :key="m.c" class="card-music">
-            <div style="flex: 1; padding-right: 10px;">
-                <div class="artist">{{ m.a }}</div>
-                <div class="title">{{ m.m }}</div>
+            
+            <div style="flex: 1; padding-right: 10px; display: flex; flex-direction: column;">
+                <div class="music-title">{{ m.m }}</div>
+                <div class="music-artist">{{ m.a }}</div>
             </div>
             
             <div class="card-actions">
