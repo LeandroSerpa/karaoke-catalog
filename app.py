@@ -10,9 +10,10 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
+# O sistema procura sua logo aqui (nesta ordem de prioridade)
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE ---
+# --- LAYOUT HTML/VUE (VERSÃO FINAL LUPA) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -39,7 +40,7 @@ HTML_TEMPLATE = """
             padding-bottom: 80px; 
             font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
-            overflow-x: hidden;
+            overflow-x: hidden; /* Evita rolagem lateral */
         }
 
         /* TEMA CLARO */
@@ -72,7 +73,7 @@ HTML_TEMPLATE = """
         }
 
         .lion-img {
-            max-width: 130px; height: auto; display: block; margin: 0 auto 5px auto;
+            max-width: 140px; height: auto; display: block; margin: 0 auto 5px auto;
             filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
         }
 
@@ -92,7 +93,7 @@ HTML_TEMPLATE = """
         [data-bs-theme="light"] .form-control-lg { background: #fff; color: #333; border: 1px solid #ccc; }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
 
-        /* FILTROS */
+        /* ABAS A-Z RESPONSIVAS */
         .alphabet-bar {
             display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 15px 10px;
         }
@@ -133,7 +134,11 @@ HTML_TEMPLATE = """
         .code-label { font-size: 0.55rem; text-align: center; opacity: 0.6; margin-top: 3px; text-transform: uppercase; }
 
         .card-actions { display: flex; gap: 12px; align-items: center; }
-        .btn-icon { font-size: 1.3rem; color: #666; transition: 0.2s; cursor: pointer; }
+        
+        /* Ícones (Coração e Lupa) */
+        .btn-icon { 
+            font-size: 1.3rem; color: #666; transition: 0.2s; cursor: pointer; text-decoration: none;
+        }
         .btn-icon:hover { color: var(--accent); transform: scale(1.1); }
         .btn-icon.is-fav { color: #ff4444; animation: heartbeat 0.5s; }
         
@@ -201,9 +206,8 @@ HTML_TEMPLATE = """
                 
                 <a :href="'https://www.google.com/search?q=letra+' + m.a + '+' + m.m" 
                    target="_blank" 
-                   class="bi bi-google btn-icon" 
-                   style="color: #4285F4; text-decoration: none;"
-                   title="Ver Letra Online"></a>
+                   class="bi bi-search btn-icon" 
+                   title="Buscar Letra"></a>
 
                 <div @click="copiar(m.c)">
                     <div class="code-btn">{{ m.c }}</div>
@@ -271,8 +275,6 @@ HTML_TEMPLATE = """
             limparLetra() { if(this.busca) this.filtroLetra = ''; this.pagina = 1; },
             toggleTheme() { this.isDark = !this.isDark; this.applyTheme(); localStorage.setItem('theme', this.isDark ? 'dark' : 'light'); },
             applyTheme() { document.documentElement.setAttribute('data-bs-theme', this.isDark ? 'dark' : 'light'); },
-            
-            // FAVORITOS
             isFavorito(c) { return this.favoritos.includes(c); },
             toggleFavorito(m) { 
                 this.isFavorito(m.c) ? this.favoritos = this.favoritos.filter(c => c !== m.c) : this.favoritos.push(m.c); 
