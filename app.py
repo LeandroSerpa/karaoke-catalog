@@ -1,13 +1,19 @@
 import os
 import re
 import json
+import base64
+import urllib.request
 from flask import Flask, render_template_string, Response
 from pypdf import PdfReader
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO
+# --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
+
+# Link da Imagem do Leão (Você pode trocar esse link por qualquer outro JPG/PNG que quiser)
+# Escolhi um Leão Neon Azul Cibernético para combinar com o tema
+URL_LEAO = "https://img.freepik.com/fotos-premium/leao-usando-fones-de-ouvido-fundo-de-dj-neon-conceito-de-musica-ia-generativa_118086-13723.jpg"
 
 # --- LAYOUT ÚNICO ---
 HTML_TEMPLATE = """
@@ -22,13 +28,14 @@ HTML_TEMPLATE = """
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         :root {
+            /* TEMA AZUL PROFISSIONAL & NEON */
             --bg-dark: #0f172a;
             --bg-gradient-dark: linear-gradient(180deg, #020617 0%, #1e293b 100%);
             
             --bg-light: #f8fafc;
             --bg-gradient-light: linear-gradient(180deg, #f1f5f9 0%, #cbd5e1 100%);
             
-            --card-dark: rgba(30, 41, 59, 0.85);
+            --card-dark: rgba(30, 41, 59, 0.9);
             --card-light: #ffffff;
             
             --text-dark: #f1f5f9;
@@ -64,132 +71,131 @@ HTML_TEMPLATE = """
         /* HEADER */
         .hero-header {
             background: linear-gradient(135deg, #020617 0%, #172554 100%);
-            padding: 25px 20px 10px 20px;
+            padding: 30px 20px 15px 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             position: relative;
             overflow: hidden;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
         }
         
-        .lion-icon {
-            width: 110px; height: 110px;
-            fill: var(--accent);
-            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.6));
-            margin-bottom: 5px;
+        /* A FOTO DO LEÃO REAL */
+        .lion-img {
+            width: 140px; height: 140px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid var(--accent);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+            margin-bottom: 10px;
+            animation: pulse 3s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(56, 189, 248, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
         }
 
         .app-title {
-            font-weight: 800; font-size: 1.6rem; margin: 0;
+            font-weight: 800; font-size: 1.8rem; margin: 0;
             text-transform: uppercase; letter-spacing: 2px;
-            color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
 
         /* CONTROLES */
         .theme-toggle {
-            position: absolute; top: 15px; right: 15px;
-            background: rgba(255,255,255,0.1); border: none; 
-            color: white; width: 35px; height: 35px; border-radius: 50%;
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); 
+            color: white; width: 40px; height: 40px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 20;
+            cursor: pointer; z-index: 20; backdrop-filter: blur(5px);
         }
 
         .search-container {
             padding: 0 15px; position: relative; z-index: 10;
-            margin-top: 15px;
         }
         .form-control-lg { 
-            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1); 
-            color: white; border-radius: 12px; padding: 12px 20px; 
+            color: white; border-radius: 15px; padding: 15px 20px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
-        .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25); }
+        .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25); }
 
-        /* BARRA ALFABÉTICA COM CONTADORES */
+        /* BARRA ALFABÉTICA (FILTROS) */
         .alphabet-bar {
-            display: flex;
-            overflow-x: auto;
-            gap: 8px;
-            padding: 15px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+            display: flex; overflow-x: auto; gap: 8px; padding: 15px;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
         }
         .alphabet-bar::-webkit-scrollbar { display: none; }
         
         .letter-btn {
-            flex: 0 0 auto;
-            /* Largura automática para caber o número */
-            min-width: 45px; height: 40px; 
-            padding: 0 15px;
-            border-radius: 10px;
+            flex: 0 0 auto; min-width: 50px; height: 45px; 
+            padding: 0 15px; border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(30, 41, 59, 0.6);
-            color: #94a3b8;
-            font-weight: bold; font-size: 0.95rem;
+            background: rgba(30, 41, 59, 0.7);
+            color: #94a3b8; font-weight: bold; font-size: 0.9rem;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
-            white-space: nowrap; /* Não quebra linha */
+            cursor: pointer; transition: 0.2s; white-space: nowrap;
         }
         .letter-btn.active {
-            background: var(--accent);
-            color: #0f172a;
-            box-shadow: 0 0 10px var(--accent);
-            border-color: var(--accent);
-            transform: scale(1.05);
+            background: var(--accent); color: #0f172a;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+            border-color: var(--accent); transform: scale(1.05);
         }
         .letter-count {
-            font-size: 0.75rem;
-            margin-left: 5px;
-            opacity: 0.7;
-            font-weight: normal;
+            font-size: 0.7rem; margin-left: 6px; opacity: 0.7; font-weight: normal;
         }
         .letter-btn.active .letter-count { opacity: 1; font-weight: bold; }
 
         /* LISTA */
         .card-music { 
             background: var(--card-dark); 
-            margin: 10px auto; padding: 12px 18px; border-radius: 10px; 
+            margin: 10px auto; padding: 15px 20px; border-radius: 12px; 
             display: flex; justify-content: space-between; align-items: center; 
-            max-width: 800px; border-left: 3px solid var(--accent);
+            max-width: 800px; border-left: 4px solid var(--accent);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .info { flex: 1; padding-right: 15px; overflow: hidden; }
         .artist { 
-            color: var(--accent); font-weight: 700; font-size: 0.8rem; 
+            color: var(--accent); font-weight: 800; font-size: 0.85rem; 
             text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .title { font-weight: 600; font-size: 1rem; line-height: 1.2; color: inherit; }
+        .title { font-weight: 600; font-size: 1.05rem; line-height: 1.2; color: inherit; }
 
         .code-btn {
             background: var(--code-bg); color: white;
-            padding: 6px 12px; border-radius: 6px;
-            font-weight: 700; font-size: 1.1rem;
-            text-align: center; min-width: 75px; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 8px 14px; border-radius: 8px;
+            font-weight: 800; font-size: 1.2rem;
+            text-align: center; min-width: 80px; cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
         }
         .code-btn:active { transform: scale(0.95); }
-        .code-label { font-size: 0.55rem; margin-top: 3px; text-transform: uppercase; opacity: 0.6; text-align: center; }
+        .code-label { font-size: 0.6rem; margin-top: 4px; text-transform: uppercase; opacity: 0.7; text-align: center; }
 
-        .pagination { justify-content: center; margin-top: 20px; display: flex; gap: 10px; align-items: center; }
+        .pagination { justify-content: center; margin-top: 25px; display: flex; gap: 10px; align-items: center; }
         .btn-page { 
-            width: 45px; height: 45px; border-radius: 8px; border: none; 
+            width: 50px; height: 50px; border-radius: 10px; border: none; 
             background: rgba(255,255,255,0.05); color: inherit; 
-            font-size: 1.2rem; 
+            font-size: 1.3rem; 
         }
         .btn-page:hover:not(:disabled) { background: var(--accent); color: #0f172a; }
         .btn-page:disabled { opacity: 0.3; }
 
         .footer-note { 
             text-align: center; margin-top: 40px; padding: 20px;
-            color: #64748b; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05);
+            color: #64748b; font-size: 0.9rem; border-top: 1px solid rgba(255,255,255,0.05);
         }
 
         .fab-download {
-            position: fixed; bottom: 20px; right: 20px;
+            position: fixed; bottom: 25px; right: 25px;
             background: #10b981; color: white;
-            width: 60px; height: 60px; border-radius: 50%;
+            width: 65px; height: 65px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            font-size: 1.8rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
             text-decoration: none; z-index: 1000;
         }
     </style>
@@ -202,9 +208,7 @@ HTML_TEMPLATE = """
             <i :class="isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill'"></i>
         </button>
         
-        <svg class="lion-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-            <path d="M167.4 266.3c15.8-5.7 30.6-13.4 44-22.9-10.7-18.4-17-39.7-17-62.4 0-33.8 13.9-64.4 36.3-86.5-12.7-16-24-34.1-33.5-54.2C178.6 68 160.8 98.7 146.9 133c-36.6 6.8-69.5 21.6-98.2 42.4 20.9 33 46 62.9 74.3 88.5 13.9-3.2 28.1-3.2 42.4 1.3.7.2 1.3.4 2 .6zM344.6 266.3c.7-.2 1.3-.4 2-.6 14.3-4.5 28.5-4.5 42.4-1.3 28.3-25.6 53.4-55.5 74.3-88.5-28.7-20.8-61.6-35.6-98.2-42.4-13.9-34.3-31.7-65-50.3-92.7-9.5 20.1-20.8 38.2-33.5 54.2 22.4 22.1 36.3 52.7 36.3 86.5 0 22.7-6.3 44-17 62.4 13.4 9.5 28.2 17.2 44 22.9zM256 225c27.6 0 50-22.4 50-50s-22.4-50-50-50-50 22.4-50 50 22.4 50 50 50zm137 99.4c-6.2-7.5-12.8-14.7-19.8-21.6-13.6 12-29.3 21.7-46.7 28.4 5.9 16.2 9.2 33.7 9.2 52 0 47-21.7 89-56 117.4 1.3.1 2.6.2 3.9.2 42 0 80.5-16.1 109.3-42.3.1 0 .1-.1.1-.1zM118.8 302.8c-7 6.9-13.6 14.1-19.8 21.6.1 0 .1.1.1.1 28.8 26.2 67.3 42.3 109.3 42.3 1.3 0 2.6-.1 3.9-.2-34.3-28.4-56-70.4-56-117.4 0-18.3 3.3-35.8 9.2-52-17.4-6.7-33.1-16.4-46.7-28.4zM256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 432c-39.7 0-76.3-13.7-105.7-36.7 8.3-43.1 46.1-75.3 91-75.3h29.5c44.9 0 82.7 32.2 91 75.3C332.3 418.3 295.7 432 256 432z"/>
-        </svg>
+        <img src="__IMAGEM_SRC__" class="lion-img" alt="Leão Karaokê">
         
         <h1 class="app-title">Catálogo<br><span style="color:var(--accent)">Karaokê</span></h1>
     </div>
@@ -273,7 +277,6 @@ HTML_TEMPLATE = """
             this.applyTheme();
         },
         computed: {
-            // Cria um mapa com a contagem de cada letra (Ex: { 'A': 50, 'B': 100 })
             mapaContagem() {
                 const map = {};
                 this.db.forEach(m => {
@@ -287,16 +290,13 @@ HTML_TEMPLATE = """
             },
             listaFiltrada() {
                 let resultado = this.db;
-                
                 if (this.filtroLetra) {
                     resultado = resultado.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra));
                 }
-                
                 if (this.busca) {
                     const t = this.busca.toLowerCase();
                     resultado = resultado.filter(m => m.a.toLowerCase().includes(t) || m.m.toLowerCase().includes(t) || m.c.includes(t));
                 }
-                
                 return resultado;
             },
             totalPaginas() { return Math.ceil(this.listaFiltrada.length / this.porPagina); },
@@ -332,6 +332,23 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# Função para baixar imagem da web e converter para Base64 (Texto)
+def obter_imagem_base64():
+    try:
+        # Usa headers para fingir ser um navegador e evitar bloqueio
+        req = urllib.request.Request(
+            URL_LEAO, 
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
+        with urllib.request.urlopen(req) as response:
+            dados = response.read()
+            b64 = base64.b64encode(dados).decode('utf-8')
+            return f"data:image/jpeg;base64,{b64}"
+    except Exception as e:
+        print(f"Erro ao baixar imagem: {e}")
+        # Se der erro, retorna um placeholder cinza
+        return "https://via.placeholder.com/150"
+
 def processar_pdf():
     if not os.path.exists(PDF_FILE): return []
     try:
@@ -364,14 +381,24 @@ CACHE_MUSICAS = processar_pdf()
 
 @app.route('/')
 def index():
+    # Na versão online, usa o link direto (carrega mais rápido)
     dados_json = json.dumps(CACHE_MUSICAS)
     btn_html = '<a href="/baixar" class="fab-download" title="Baixar App"><i class="bi bi-download"></i></a>'
-    return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json).replace('__BOTAO_DOWNLOAD__', btn_html)
+    return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
+                        .replace('__BOTAO_DOWNLOAD__', btn_html)\
+                        .replace('__IMAGEM_SRC__', URL_LEAO)
 
 @app.route('/baixar')
 def baixar():
+    # Na versão baixada, EMBUTE a imagem real (Base64)
+    print("Baixando imagem e convertendo para Base64...")
+    imagem_b64 = obter_imagem_base64()
+    
     dados_json = json.dumps(CACHE_MUSICAS)
-    html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json).replace('__BOTAO_DOWNLOAD__', '')
+    html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
+                              .replace('__BOTAO_DOWNLOAD__', '')\
+                              .replace('__IMAGEM_SRC__', imagem_b64)
+    
     return Response(
         html_final,
         mimetype="text/html",
