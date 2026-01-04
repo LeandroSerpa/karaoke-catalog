@@ -10,10 +10,10 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
-# O sistema vai procurar por estes nomes de imagem no seu GitHub
+# Procura por logo.png, logo.jpg, etc.
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT ÚNICO ---
+# --- LAYOUT HTML/VUE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -28,7 +28,7 @@ HTML_TEMPLATE = """
         :root {
             --bg-dark: #050505;
             --bg-gradient: linear-gradient(180deg, #000000 0%, #1a1a1a 100%);
-            --accent: #FFD700; /* Dourado Clássico Videokê */
+            --accent: #FFD700; /* Dourado */
             --card-bg: #1e1e1e;
             --text-main: #f0f0f0;
         }
@@ -38,87 +38,121 @@ HTML_TEMPLATE = """
             background-image: var(--bg-gradient);
             background-attachment: fixed;
             padding-bottom: 80px; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
+            transition: 0.3s;
         }
+
+        /* TEMA CLARO */
+        [data-bs-theme="light"] body {
+            --bg-dark: #f0f2f5;
+            --bg-gradient: linear-gradient(180deg, #ffffff 0%, #e9ecef 100%);
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            color: #333;
+        }
+        [data-bs-theme="light"] .card-music {
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        [data-bs-theme="light"] .title { color: #000; }
+        [data-bs-theme="light"] .letter-btn { background: #fff; color: #333; border: 1px solid #ddd; }
+        [data-bs-theme="light"] .letter-btn.active { color: #000; }
 
         /* HEADER */
         .hero-header {
             background: linear-gradient(to bottom, #000 0%, #222 100%);
-            padding: 30px 20px;
+            padding: 20px;
             text-align: center;
             border-bottom: 3px solid var(--accent);
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-            border-radius: 0 0 20px 20px;
+            border-radius: 0 0 25px 25px;
             margin-bottom: 25px;
+            position: relative;
         }
         
-        /* A Imagem do Leão */
+        /* BOTÃO DE TEMA (SOL/LUA) - VOLTOU! */
+        .theme-toggle {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
+            color: var(--accent); width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 50; backdrop-filter: blur(4px);
+        }
+
         .lion-img {
-            max-width: 150px;
-            height: auto;
-            display: block;
-            margin: 0 auto 10px auto;
+            max-width: 140px; height: auto; display: block; margin: 0 auto 5px auto;
             filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
         }
 
-        /* Texto VIDEOKÊ estilizado caso a imagem não tenha o texto */
         .brand-title {
-            font-family: 'Arial Black', sans-serif;
-            font-size: 2rem;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin: 0;
+            font-family: 'Arial Black', sans-serif; font-size: 2rem; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 2px; margin: 0;
             text-shadow: 2px 2px 0 #000;
         }
-        
-        .sub-title { color: #888; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase; }
+        .sub-title { color: #888; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; }
 
         /* BUSCA */
         .search-container { padding: 0 15px; margin-top: -15px; }
         .form-control-lg { 
-            background: #2d2d2d; border: 1px solid #444; 
+            background: rgba(45, 45, 45, 0.9); border: 1px solid #555; 
             color: white; border-radius: 12px; padding: 12px 20px; 
         }
+        [data-bs-theme="light"] .form-control-lg { background: #fff; color: #333; border: 1px solid #ccc; }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
 
-        /* ABAS A-Z */
+        /* ABAS A-Z RESPONSIVAS (WRAP) */
         .alphabet-bar {
-            display: flex; overflow-x: auto; gap: 8px; padding: 15px;
-            scrollbar-width: none;
+            display: flex; 
+            flex-wrap: wrap; /* AQUI ESTÁ O SEGREDO: QUEBRA DE LINHA */
+            justify-content: center;
+            gap: 6px; 
+            padding: 15px 10px;
         }
+        
         .letter-btn {
-            flex: 0 0 auto; min-width: 45px; height: 40px; 
+            flex: 0 0 auto; 
+            width: 42px; height: 38px; /* Tamanho fixo para ficar bonito no grid */
             border-radius: 8px; border: 1px solid #333;
-            background: #1a1a1a; color: #888; font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
+            background: #1a1a1a; color: #888; font-weight: bold; font-size: 0.9rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+            line-height: 1;
         }
+        .letter-btn-wide {
+            width: auto; padding: 0 15px; /* Botão TODOS fica mais largo */
+        }
+        
         .letter-btn.active {
             background: var(--accent); color: #000; border-color: var(--accent);
-            transform: scale(1.05); font-weight: 900;
+            transform: scale(1.1); font-weight: 900; box-shadow: 0 0 10px rgba(255,215,0,0.4);
         }
+        .letter-count { font-size: 0.6rem; opacity: 0.8; font-weight: normal; margin-top: 2px; }
+        .letter-btn.active .letter-count { font-weight: bold; }
 
         /* LISTA */
         .card-music { 
             background: var(--card-bg); 
-            margin: 10px auto; padding: 15px; border-radius: 10px; 
+            margin: 10px auto; padding: 12px 15px; border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
             max-width: 800px; border-left: 4px solid var(--accent);
         }
-        .artist { color: var(--accent); font-weight: bold; font-size: 0.85rem; text-transform: uppercase; }
-        .title { font-weight: 600; font-size: 1.1rem; color: white; line-height: 1.2; }
+        .artist { color: var(--accent); font-weight: bold; font-size: 0.8rem; text-transform: uppercase; }
+        [data-bs-theme="light"] .artist { color: #d4b106; }
+        .title { font-weight: 600; font-size: 1rem; color: var(--text-main); line-height: 1.2; }
         
         .code-btn {
-            background: #0d6efd; color: white; /* Azul padrão para contraste */
-            padding: 8px 12px; border-radius: 6px; font-weight: 900; font-size: 1.2rem;
-            min-width: 80px; text-align: center;
+            background: #0d6efd; color: white;
+            padding: 8px 10px; border-radius: 6px; font-weight: 900; font-size: 1.1rem;
+            min-width: 75px; text-align: center;
         }
-        .code-label { font-size: 0.6rem; text-align: center; opacity: 0.6; margin-top: 3px; text-transform: uppercase; }
+        .code-label { font-size: 0.55rem; text-align: center; opacity: 0.6; margin-top: 3px; text-transform: uppercase; }
 
-        /* PAGINAÇÃO & BOTÃO */
+        /* PAGINAÇÃO */
         .pagination { justify-content: center; margin-top: 25px; display: flex; gap: 10px; align-items: center; }
         .btn-page { width: 45px; height: 45px; border-radius: 50%; border: none; background: #333; color: white; font-size: 1.2rem; }
+        [data-bs-theme="light"] .btn-page { background: #ddd; color: #333; }
+        .btn-page:hover:not(:disabled) { background: var(--accent); color: black; }
         .btn-page:disabled { opacity: 0.3; }
 
         .fab-download {
@@ -132,25 +166,37 @@ HTML_TEMPLATE = """
 <div id="app">
     
     <div class="hero-header">
+        <button class="theme-toggle" @click="toggleTheme">
+            <i :class="isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill'"></i>
+        </button>
+
         <img src="__IMAGEM_SRC__" class="lion-img" alt="Logo">
         <h1 class="brand-title">VIDEOKÊ</h1>
         <div class="sub-title">Catálogo Digital</div>
     </div>
 
     <div class="search-container">
-        <input type="text" class="form-control form-control-lg" v-model="busca" placeholder="🔍 Buscar música..." @input="limparLetra()">
+        <input type="text" class="form-control form-control-lg" v-model="busca" placeholder="🔍 Digite música, cantor ou número..." @input="limparLetra()">
     </div>
 
     <div class="alphabet-bar">
-        <div class="letter-btn" :class="{active: filtroLetra === ''}" @click="filtrarLetra('')">
-            ALL
+        <div class="letter-btn letter-btn-wide" :class="{active: filtroLetra === ''}" @click="filtrarLetra('')">
+            TODOS
+            <span class="letter-count">{{ db.length }}</span>
         </div>
+        
+        <div class="letter-btn" :class="{active: filtroLetra === '0-9'}" @click="filtrarLetra('0-9')">
+            0-9
+            <span class="letter-count">{{ mapaContagem['0-9'] || 0 }}</span>
+        </div>
+
         <div class="letter-btn" v-for="letra in alfabeto" :class="{active: filtroLetra === letra}" @click="filtrarLetra(letra)">
             {{ letra }}
+            <span class="letter-count">{{ mapaContagem[letra] || 0 }}</span>
         </div>
     </div>
     
-    <div class="text-center mt-2 small opacity-50">{{ listaFiltrada.length }} músicas</div>
+    <div class="text-center mt-2 small opacity-50">{{ listaFiltrada.length }} músicas encontradas</div>
 
     <div class="container pb-5">
         <div v-for="m in listaPaginada" :key="m.c" class="card-music">
@@ -166,38 +212,81 @@ HTML_TEMPLATE = """
 
         <div class="pagination" v-if="totalPaginas > 1">
             <button class="btn-page" @click="mudarPagina(-1)" :disabled="pagina===1">❮</button>
-            <span class="fw-bold align-self-center">{{ pagina }}</span>
+            <span class="fw-bold align-self-center">{{ pagina }} / {{ totalPaginas }}</span>
             <button class="btn-page" @click="mudarPagina(1)" :disabled="pagina===totalPaginas">❯</button>
         </div>
         
-        <div class="text-center mt-4 text-muted small">Gerado via Sistema</div>
+        <div class="text-center mt-4 text-muted small">Catálogo Karaokê Oficial</div>
     </div>
 
     __BOTAO_DOWNLOAD__
 </div>
 
 <script>
-    // AQUI O PYTHON GARANTE QUE OS ACENTOS VENHAM CERTOS (UTF-8)
     const musicas = __DADOS_AQUI__;
     
     const { createApp } = Vue;
     createApp({
         data() { return { 
-            db: musicas, busca: '', filtroLetra: '', pagina: 1, porPagina: 50,
+            db: musicas, 
+            busca: '', 
+            filtroLetra: '', 
+            pagina: 1, 
+            porPagina: 50,
+            isDark: true,
             alfabeto: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
         }},
+        mounted() {
+            // Recupera o tema salvo
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') { this.isDark = false; }
+            this.applyTheme();
+        },
         computed: {
+            mapaContagem() {
+                const map = {};
+                this.db.forEach(m => {
+                    if(m.a) {
+                        const char = m.a.charAt(0).toUpperCase();
+                        // Se for número, agrupa em '0-9'
+                        if (/[0-9]/.test(char)) {
+                            map['0-9'] = (map['0-9'] || 0) + 1;
+                        } else {
+                            map[char] = (map[char] || 0) + 1;
+                        }
+                    }
+                });
+                return map;
+            },
             listaFiltrada() {
                 let res = this.db;
-                if (this.filtroLetra) res = res.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra));
+
+                // Filtro por Letra ou Numero
+                if (this.filtroLetra) {
+                    if (this.filtroLetra === '0-9') {
+                        // Filtra tudo que começa com número
+                        res = res.filter(m => /^[0-9]/.test(m.a));
+                    } else {
+                        // Filtra por letra normal
+                        res = res.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra));
+                    }
+                }
+
+                // Filtro por Busca (Texto)
                 if (this.busca) {
                     const t = this.busca.toLowerCase();
-                    res = res.filter(m => m.a.toLowerCase().includes(t) || m.m.toLowerCase().includes(t) || m.c.includes(t));
+                    res = res.filter(m => 
+                        m.a.toLowerCase().includes(t) || 
+                        m.m.toLowerCase().includes(t) || 
+                        m.c.includes(t)
+                    );
                 }
                 return res;
             },
             totalPaginas() { return Math.ceil(this.listaFiltrada.length / this.porPagina); },
             listaPaginada() {
+                // Paginação segura
+                if (this.listaFiltrada.length === 0) return [];
                 const i = (this.pagina - 1) * this.porPagina;
                 return this.listaFiltrada.slice(i, i + this.porPagina);
             }
@@ -205,8 +294,23 @@ HTML_TEMPLATE = """
         methods: {
             copiar(t) { navigator.clipboard.writeText(t).then(() => alert('Código ' + t + ' copiado!')); },
             mudarPagina(d) { this.pagina += d; window.scrollTo(0, 0); },
-            filtrarLetra(l) { this.filtroLetra = l; this.busca = ''; this.pagina = 1; },
-            limparLetra() { if(this.busca) this.filtroLetra = ''; this.pagina = 1; }
+            filtrarLetra(l) { 
+                this.filtroLetra = l; 
+                this.busca = ''; 
+                this.pagina = 1; // Reseta para página 1 ao trocar filtro
+            },
+            limparLetra() { 
+                if(this.busca) this.filtroLetra = ''; 
+                this.pagina = 1; 
+            },
+            toggleTheme() {
+                this.isDark = !this.isDark;
+                this.applyTheme();
+                localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+            },
+            applyTheme() {
+                document.documentElement.setAttribute('data-bs-theme', this.isDark ? 'dark' : 'light');
+            }
         }
     }).mount('#app');
 </script>
@@ -215,18 +319,13 @@ HTML_TEMPLATE = """
 """
 
 def encontrar_imagem_local():
-    """Procura por logo.png/jpg no diretório e retorna caminho ou None"""
     for nome in NOME_IMAGEM:
-        if os.path.exists(nome):
-            return nome
+        if os.path.exists(nome): return nome
     return None
 
 def imagem_para_base64(caminho_arquivo):
-    """Converte arquivo de imagem para string Base64 para embutir no HTML"""
     if not caminho_arquivo:
-        # Se não tiver imagem, usa um microfone genérico transparente
         return "https://cdn-icons-png.flaticon.com/512/3408/3408764.png"
-    
     with open(caminho_arquivo, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
         mime_type, _ = mimetypes.guess_type(caminho_arquivo)
@@ -257,53 +356,29 @@ CACHE_MUSICAS = processar_pdf()
 
 @app.route('/')
 def index():
-    # Garante acentos corretos (UTF-8)
     dados_json = json.dumps(CACHE_MUSICAS, ensure_ascii=False)
-    
-    # Tenta mostrar a imagem online (link direto do arquivo se existir)
     caminho_img = encontrar_imagem_local()
-    if caminho_img:
-        # Rota local para imagem (simplificada)
-        src_img = f"/{caminho_img}"
-    else:
-        src_img = "https://cdn-icons-png.flaticon.com/512/3408/3408764.png"
-
+    if caminho_img: src_img = f"/{caminho_img}"
+    else: src_img = "https://cdn-icons-png.flaticon.com/512/3408/3408764.png"
     btn = '<a href="/baixar" class="fab-download"><i class="bi bi-download"></i></a>'
     return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
                         .replace('__BOTAO_DOWNLOAD__', btn)\
                         .replace('__IMAGEM_SRC__', src_img)
 
-# Rota para servir a imagem localmente na prévia
 @app.route('/<path:filename>')
 def serve_static(filename):
-    if filename in NOME_IMAGEM and os.path.exists(filename):
-        return send_file(filename)
+    if filename in NOME_IMAGEM and os.path.exists(filename): return send_file(filename)
     return "Arquivo não encontrado", 404
 
 @app.route('/baixar')
 def baixar():
-    # 1. Pega a imagem que você subiu e converte para código
     caminho_img = encontrar_imagem_local()
-    if caminho_img:
-        print(f"Embutindo imagem: {caminho_img}")
-        img_code = imagem_para_base64(caminho_img)
-    else:
-        print("Imagem logo.png não encontrada! Usando genérica.")
-        img_code = "https://cdn-icons-png.flaticon.com/512/3408/3408764.png"
-    
-    # 2. Garante acentos (ensure_ascii=False)
+    img_code = imagem_para_base64(caminho_img)
     dados_json = json.dumps(CACHE_MUSICAS, ensure_ascii=False)
-    
     html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
                               .replace('__BOTAO_DOWNLOAD__', '')\
                               .replace('__IMAGEM_SRC__', img_code)
-    
-    # 3. Força codificação UTF-8 no download
-    return Response(
-        html_final,
-        mimetype="text/html; charset=utf-8",
-        headers={"Content-disposition": "attachment; filename=Catalogo_Videoke.html"}
-    )
+    return Response(html_final.encode('utf-8'), mimetype="text/html; charset=utf-8", headers={"Content-disposition": "attachment; filename=Catalogo_Videoke.html"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
