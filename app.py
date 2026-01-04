@@ -12,7 +12,7 @@ app = Flask(__name__)
 PDF_FILE = "catalogo.pdf"
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE ---
+# --- LAYOUT HTML/VUE (VERSÃO FINAL - DESIGN REFINADO) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -117,27 +117,29 @@ HTML_TEMPLATE = """
         /* LISTA */
         .card-music { 
             background: var(--card-bg); 
-            margin: 10px auto; padding: 15px 15px; border-radius: 10px; 
+            margin: 10px auto; padding: 18px 15px; /* Mais espaço interno */
+            border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
             max-width: 800px; border-left: 4px solid var(--accent);
         }
         
-        /* ÁREA DE TEXTO */
+        /* ÁREA DE TEXTO (Esquerda) */
         .info-col {
             flex: 1; 
             padding-right: 15px; 
             display: flex; 
             flex-direction: column;
-            gap: 2px;
+            /* Não usa gap fixo, ajustamos com margin nos elementos */
         }
 
         /* 1. ARTISTA (Dourado) */
         .music-artist {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--accent); 
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
         [data-bs-theme="light"] .music-artist { color: #b89c08; }
 
@@ -147,24 +149,25 @@ HTML_TEMPLATE = """
             font-weight: 700;
             color: #ffffff;
             line-height: 1.25;
-            margin-bottom: 3px;
             white-space: normal;
         }
         [data-bs-theme="light"] .music-title { color: #000; }
 
-        /* 3. TRECHO DA LETRA (Aparece o texto real da coluna do PDF) */
+        /* 3. TRECHO DA LETRA (NOVA COR E ESPAÇAMENTO) */
         .music-lyrics-text {
-            font-size: 0.75rem;
-            color: #777;
+            font-size: 0.85rem; /* Um pouco maior para ler bem */
+            color: #94a3b8; /* Azul acinzentado claro (Diferente do branco e do dourado) */
             font-weight: 400;
             font-style: italic;
             white-space: normal;
+            margin-top: 8px; /* AQUI ESTÁ A QUEBRA DE LINHA PEDIDA */
+            line-height: 1.3;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Mostra até 2 linhas */
+            -webkit-line-clamp: 3; /* Mostra até 3 linhas se precisar */
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        [data-bs-theme="light"] .music-lyrics-text { color: #666; }
+        [data-bs-theme="light"] .music-lyrics-text { color: #555; }
 
         /* AÇÕES (Direita) */
         .card-actions { 
@@ -366,15 +369,11 @@ def processar_pdf():
                 match = pattern.search(linha)
                 if match:
                     artista_cru = match.group(1).strip()
-                    
-                    # CORREÇÃO: Remove apenas "UM" (número de página) mas deixa números reais
                     if artista_cru.upper() == "UM": continue
                     
                     codigo = match.group(2).strip()
                     
-                    # CORREÇÃO: Separa Título e Letra usando espaços duplos
                     resto = match.group(3).strip()
-                    # Procura por 2 ou mais espaços para dividir as colunas
                     partes = re.split(r'\s{2,}', resto, maxsplit=1)
                     titulo = partes[0]
                     letra_snippet = partes[1] if len(partes) > 1 else ""
@@ -384,7 +383,7 @@ def processar_pdf():
                             "a": artista_cru, 
                             "c": codigo, 
                             "m": titulo,
-                            "l": letra_snippet # Passa a letra real do PDF
+                            "l": letra_snippet
                         })
                         vistos.add(codigo)
         lista.sort(key=lambda x: x['a'].lower())
@@ -416,7 +415,4 @@ def baixar():
     html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
                               .replace('__BOTAO_DOWNLOAD__', '')\
                               .replace('__IMAGEM_SRC__', img_code)
-    return Response(html_final.encode('utf-8'), mimetype="text/html; charset=utf-8", headers={"Content-disposition": "attachment; filename=Catalogo_Videoke.html"})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    return Response(html_final.encode('utf-8'), mimetype="text/html; charset=utf-8", headers={"Content-disposition": "attachment; filename=Catalogo_Videoke.
