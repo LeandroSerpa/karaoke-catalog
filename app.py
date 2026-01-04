@@ -47,14 +47,32 @@ HTML_TEMPLATE = """
         .letter-btn.active .letter-count { font-weight: bold; }
         .btn-fav-filter { background: #330000; border-color: #ff4444; color: #ff4444; }
         .btn-fav-filter.active { background: #ff4444; color: white; border-color: #ff4444; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
-        .card-music { background: var(--card-bg); margin: 10px auto; padding: 18px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; max-width: 800px; border-left: 4px solid var(--accent); }
-        .info-col { flex: 1; padding-right: 15px; display: flex; flex-direction: column; }
-        .music-artist { font-size: 0.75rem; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .card-music { background: var(--card-bg); margin: 10px auto; padding: 15px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; max-width: 800px; border-left: 4px solid var(--accent); }
+        .info-col { flex: 1; padding-right: 15px; display: flex; flex-direction: column; gap: 2px; }
+        
+        /* ESTILOS REFINADOS DO TEXTO */
+        .music-artist { font-size: 0.8rem; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         [data-bs-theme="light"] .music-artist { color: #b89c08; }
-        .music-title { font-size: 1.15rem; font-weight: 700; color: #ffffff; line-height: 1.25; white-space: normal; }
+        
+        .music-title { 
+            font-size: 1.15rem; font-weight: 700; color: #ffffff; 
+            line-height: 1.25; margin-bottom: 4px; white-space: normal; 
+        }
         [data-bs-theme="light"] .music-title { color: #000; }
-        .music-lyrics-text { font-size: 0.85rem; color: #94a3b8; font-weight: 400; font-style: italic; white-space: normal; margin-top: 8px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        /* A LETRA AGORA TEM QUEBRA DE LINHA E COR DIFERENTE */
+        .music-lyrics-text { 
+            display: block; /* Garante a quebra de linha */
+            margin-top: 6px; /* Espaço entre Título e Letra */
+            font-size: 0.85rem; 
+            color: #aaa; /* Cinza claro para diferenciar do branco */
+            font-weight: 400; 
+            font-style: normal; 
+            line-height: 1.3;
+            white-space: normal;
+        }
         [data-bs-theme="light"] .music-lyrics-text { color: #555; }
+
         .card-actions { display: flex; flex-direction: row; align-items: center; gap: 12px; }
         .btn-icon { font-size: 1.4rem; color: #555; transition: 0.2s; cursor: pointer; text-decoration: none; padding: 5px; }
         .btn-icon:hover { color: var(--accent); transform: scale(1.1); }
@@ -104,8 +122,7 @@ HTML_TEMPLATE = """
             <div class="info-col">
                 <div class="music-artist">{{ m.a }}</div>
                 <div class="music-title">{{ m.m }}</div>
-                <div class="music-lyrics-text" v-if="m.l && m.l.length > 2">{{ m.l }}...</div>
-                <div class="music-lyrics-text" v-else style="opacity: 0.5">Letra não disponível no arquivo</div>
+                <div class="music-lyrics-text" v-if="m.l && m.l.trim().length > 0">{{ m.l }}</div>
             </div>
             <div class="card-actions">
                 <i class="bi btn-icon" :class="isFavorito(m.c) ? 'bi-heart-fill is-fav' : 'bi-heart'" @click="toggleFavorito(m)" title="Favoritar"></i>
@@ -203,17 +220,28 @@ def processar_pdf():
         pattern = re.compile(r"(.+?)\s+(\d{4,5})\s+(.+)")
         
         for page in reader.pages:
-            texto = page.extract_text()
+            # TENTA USAR O MODO LAYOUT PARA RESPEITAR OS ESPAÇOS DO PDF
+            try:
+                texto = page.extract_text(extraction_mode="layout")
+            except:
+                texto = page.extract_text() # Fallback se falhar
+                
             if not texto: continue
+            
             for linha in texto.split('\n'):
                 match = pattern.search(linha)
                 if match:
                     artista_cru = match.group(1).strip()
-                    if artista_cru.upper() == "UM": continue
+                    
+                    # 1. REMOVE SOMENTE "UM" E "TITULO", MAS DEIXA "19" E "365"
+                    if artista_cru.upper() in ["UM", "TÍTULO", "CANTOR", "INÍCIO"]: continue
                     
                     codigo = match.group(2).strip()
                     
                     resto = match.group(3).strip()
+                    
+                    # 2. TENTA SEPARAR TÍTULO E LETRA USANDO 2 ESPAÇOS COMO DIVISOR
+                    # O "layout mode" ajuda a garantir que esses espaços existam
                     partes = re.split(r'\s{2,}', resto, maxsplit=1)
                     titulo = partes[0]
                     letra_snippet = partes[1] if len(partes) > 1 else ""
@@ -223,7 +251,7 @@ def processar_pdf():
                             "a": artista_cru, 
                             "c": codigo, 
                             "m": titulo,
-                            "l": letra_snippet
+                            "l": letra_snippet 
                         })
                         vistos.add(codigo)
         lista.sort(key=lambda x: x['a'].lower())
@@ -256,7 +284,7 @@ def baixar():
                               .replace('__BOTAO_DOWNLOAD__', '')\
                               .replace('__IMAGEM_SRC__', img_code)
     
-    # --- CORREÇÃO DO ERRO DA LINHA CORTADA AQUI EMBAIXO ---
+    # GARANTE QUE O ARQUIVO NÃO QUEBRE
     return Response(
         html_final.encode('utf-8'),
         mimetype="text/html; charset=utf-8",
