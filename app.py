@@ -3,6 +3,7 @@ import re
 import json
 import base64
 import urllib.request
+import ssl
 from flask import Flask, render_template_string, Response
 from pypdf import PdfReader
 
@@ -11,9 +12,9 @@ app = Flask(__name__)
 # --- CONFIGURAÇÕES ---
 PDF_FILE = "catalogo.pdf"
 
-# Link da Imagem do Leão (Você pode trocar esse link por qualquer outro JPG/PNG que quiser)
-# Escolhi um Leão Neon Azul Cibernético para combinar com o tema
-URL_LEAO = "https://img.freepik.com/fotos-premium/leao-usando-fones-de-ouvido-fundo-de-dj-neon-conceito-de-musica-ia-generativa_118086-13723.jpg"
+# LINK CORRIGIDO: Leão Majestoso (Unsplash - Alta Qualidade)
+# Este link é direto e estável.
+URL_LEAO = "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=600&q=80"
 
 # --- LAYOUT ÚNICO ---
 HTML_TEMPLATE = """
@@ -335,18 +336,21 @@ HTML_TEMPLATE = """
 # Função para baixar imagem da web e converter para Base64 (Texto)
 def obter_imagem_base64():
     try:
-        # Usa headers para fingir ser um navegador e evitar bloqueio
+        # Contexto SSL para evitar erros de certificado
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
         req = urllib.request.Request(
             URL_LEAO, 
             headers={'User-Agent': 'Mozilla/5.0'}
         )
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, context=ctx) as response:
             dados = response.read()
             b64 = base64.b64encode(dados).decode('utf-8')
             return f"data:image/jpeg;base64,{b64}"
     except Exception as e:
         print(f"Erro ao baixar imagem: {e}")
-        # Se der erro, retorna um placeholder cinza
         return "https://via.placeholder.com/150"
 
 def processar_pdf():
@@ -381,7 +385,7 @@ CACHE_MUSICAS = processar_pdf()
 
 @app.route('/')
 def index():
-    # Na versão online, usa o link direto (carrega mais rápido)
+    # Na versão online, usa o link direto
     dados_json = json.dumps(CACHE_MUSICAS)
     btn_html = '<a href="/baixar" class="fab-download" title="Baixar App"><i class="bi bi-download"></i></a>'
     return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json)\
@@ -390,7 +394,7 @@ def index():
 
 @app.route('/baixar')
 def baixar():
-    # Na versão baixada, EMBUTE a imagem real (Base64)
+    # Na versão baixada, EMBUTE a imagem real
     print("Baixando imagem e convertendo para Base64...")
     imagem_b64 = obter_imagem_base64()
     
