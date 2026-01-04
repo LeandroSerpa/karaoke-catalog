@@ -9,66 +9,149 @@ app = Flask(__name__)
 # CONFIGURAÇÃO
 PDF_FILE = "catalogo.pdf"
 
-# --- LAYOUT DO SITE ONLINE (O que você vê no Easypanel) ---
-HTML_ONLINE = """
+# --- LAYOUT ÚNICO (Serve tanto para o site online quanto para o arquivo baixado) ---
+HTML_TEMPLATE = """
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Catálogo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catálogo de Karaokê 🎤</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
-        .card { max-width: 500px; width: 90%; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
-        .btn-download { background: #28a745; color: white; padding: 15px 30px; font-size: 1.2rem; border-radius: 50px; text-decoration: none; display: block; margin-top: 20px; font-weight: bold; transition: 0.3s; }
-        .btn-download:hover { background: #218838; transform: scale(1.05); }
-        .stats { color: #666; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1 class="mb-3">🎤 Tudo Pronto!</h1>
-        <p class="stats">Processamos <strong>{{ qtd }}</strong> músicas do seu PDF.</p>
-        <p>Clique abaixo para baixar o arquivo HTML único. Depois, você pode enviar esse arquivo pelo WhatsApp e desligar este servidor.</p>
-        
-        <a href="/baixar" class="btn-download">📥 BAIXAR CATÁLOGO OFFLINE</a>
-    </div>
-</body>
-</html>
-"""
-
-# --- LAYOUT DO ARQUIVO FINAL (O que vai pro WhatsApp) ---
-# Este HTML contém o Vue.js e os dados embutidos para rodar sem servidor
-HTML_OFFLINE_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo de Karaokê</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        body { background: #f4f4f4; padding-bottom: 50px; font-family: sans-serif; }
-        .search-box { position: sticky; top: 0; background: white; padding: 15px; border-bottom: 3px solid #0d6efd; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .card-music { background: white; margin: 10px auto; padding: 15px; border-radius: 8px; border-left: 5px solid #0d6efd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-width: 800px; display: flex; justify-content: space-between; align-items: center; }
-        .info { flex: 1; padding-right: 10px; overflow: hidden; }
-        .artist { color: #0d6efd; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 2px; }
-        .title { font-weight: bold; font-size: 1.1rem; line-height: 1.2; color: #333; }
-        .code { background: #eee; padding: 10px; border-radius: 8px; font-weight: 900; font-size: 1.4rem; color: #333; min-width: 90px; text-align: center; cursor: pointer; border: 2px dashed #ccc; }
-        .code:active { background: #ccc; transform: scale(0.95); }
-        .pagination { justify-content: center; margin-top: 20px; display: flex; gap: 15px; align-items: center; }
-        .btn-page { background: #0d6efd; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; font-size: 1.2rem; }
-        .btn-page:disabled { opacity: 0.5; }
-        .footer-note { text-align: center; margin-top: 30px; color: #999; font-size: 0.8rem; }
+        :root {
+            --bg-gradient-dark: linear-gradient(135deg, #12001f 0%, #290038 100%);
+            --bg-gradient-light: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg-dark: rgba(255, 255, 255, 0.05);
+            --card-bg-light: rgba(255, 255, 255, 0.8);
+            --text-main-dark: #eee;
+            --text-main-light: #333;
+            --highlight: #ff00cc;
+        }
+
+        body { 
+            background: var(--bg-gradient-dark); 
+            background-attachment: fixed;
+            padding-bottom: 80px; 
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-main-dark);
+            transition: background 0.5s;
+        }
+
+        /* Modo Claro (Sobrescrita) */
+        [data-bs-theme="light"] body {
+            background: var(--bg-gradient-light);
+            color: var(--text-main-light);
+        }
+        [data-bs-theme="light"] .card-music {
+            background: var(--card-bg-light);
+            border: 1px solid rgba(0,0,0,0.1);
+            color: #333;
+        }
+        [data-bs-theme="light"] .title { color: #333; }
+        [data-bs-theme="light"] .form-control-lg {
+            background: white; color: #333; border: 1px solid #ccc;
+        }
+        [data-bs-theme="light"] .form-control-lg::placeholder { color: #666; }
+
+        /* Cabeçalho */
+        .header-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(5px);
+        }
+        .header-title { font-weight: 900; font-size: 1.2rem; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Botão de Tema */
+        .theme-toggle {
+            background: none; border: none; color: inherit; font-size: 1.5rem; cursor: pointer; transition: 0.3s;
+        }
+        .theme-toggle:hover { transform: rotate(20deg); color: var(--highlight); }
+
+        /* Busca */
+        .search-box-container { 
+            position: sticky; top: 0; z-index: 100; 
+            background: rgba(0, 0, 0, 0.3); 
+            backdrop-filter: blur(15px); 
+            padding: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
+        [data-bs-theme="light"] .search-box-container { background: rgba(255, 255, 255, 0.6); }
+
+        .form-control-lg { 
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
+            color: white; border-radius: 50px; padding-left: 20px; 
+        }
+        .form-control-lg:focus { box-shadow: 0 0 0 0.25rem rgba(255, 0, 204, 0.25); border-color: var(--highlight); }
+
+        /* Cards de Música */
+        .card-music { 
+            background: var(--card-bg-dark); 
+            margin: 10px auto; padding: 15px; border-radius: 16px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; justify-content: space-between; align-items: center; 
+            max-width: 800px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .info { flex: 1; padding-right: 15px; }
+        .artist { color: var(--highlight); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 2px; }
+        .title { font-weight: 600; font-size: 1.1rem; line-height: 1.2; color: #eee; }
+
+        /* Código */
+        .code-box {
+            background: linear-gradient(45deg, #ffcc00, #ff9900);
+            color: #440000;
+            padding: 8px 15px; border-radius: 12px;
+            font-weight: 900; font-size: 1.4rem;
+            text-align: center; min-width: 80px;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(255, 153, 0, 0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .code-box:active { transform: scale(0.95); }
+        .copy-label { font-size: 0.6rem; text-transform: uppercase; font-weight: bold; margin-top: 3px; opacity: 0.8;}
+
+        /* Paginação */
+        .pagination { justify-content: center; margin-top: 30px; display: flex; gap: 15px; align-items: center; }
+        .btn-page { 
+            width: 45px; height: 45px; border-radius: 50%; border: none; 
+            background: rgba(255,255,255,0.1); color: inherit; 
+            font-size: 1.2rem; transition: 0.2s; 
+        }
+        [data-bs-theme="light"] .btn-page { background: rgba(0,0,0,0.1); }
+        .btn-page:hover:not(:disabled) { background: var(--highlight); color: white; }
+        .btn-page:disabled { opacity: 0.3; }
+
+        /* Botão Flutuante de Download (Só aparece no modo Online) */
+        .fab-download {
+            position: fixed; bottom: 20px; right: 20px;
+            background: #28a745; color: white;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            text-decoration: none; z-index: 1000; transition: 0.3s;
+            animation: bounce 2s infinite;
+        }
+        .fab-download:hover { transform: scale(1.1); background: #218838; color: white; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+        
+        .hide-on-offline { display: none; }
     </style>
 </head>
 <body>
 <div id="app">
-    <div class="search-box">
-        <input type="text" class="form-control form-control-lg" v-model="busca" placeholder="🔍 Digite artista, música ou código..." @input="pagina=1">
-        <div class="text-center mt-2 small text-muted">{{ listaFiltrada.length }} músicas disponíveis</div>
+    <div class="header-bar">
+        <h1 class="header-title">🎤 Karaokê <span style="color:var(--highlight)">Vibes</span></h1>
+        <button class="theme-toggle" @click="toggleTheme">
+            <i :class="isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill'"></i>
+        </button>
+    </div>
+
+    <div class="search-box-container">
+        <input type="text" class="form-control form-control-lg" v-model="busca" placeholder="🔍 Buscar música, cantor ou código..." @input="pagina=1">
+        <div class="text-center mt-2 small opacity-75">{{ listaFiltrada.length }} músicas encontradas</div>
     </div>
 
     <div class="container mt-2">
@@ -77,26 +160,47 @@ HTML_OFFLINE_TEMPLATE = """
                 <div class="artist">{{ m.a }}</div>
                 <div class="title">{{ m.m }}</div>
             </div>
-            <div class="code" @click="copiar(m.c)">{{ m.c }}</div>
+            <div @click="copiar(m.c)" class="text-center">
+                <div class="code-box">{{ m.c }}</div>
+                <div class="copy-label">Copiar</div>
+            </div>
         </div>
 
         <div class="pagination" v-if="totalPaginas > 1">
-            <button class="btn-page" @click="mudarPagina(-1)" :disabled="pagina===1"><</button>
-            <strong>{{ pagina }} / {{ totalPaginas }}</strong>
-            <button class="btn-page" @click="mudarPagina(1)" :disabled="pagina===totalPaginas">></button>
+            <button class="btn-page" @click="mudarPagina(-1)" :disabled="pagina===1"><i class="bi bi-chevron-left"></i></button>
+            <span class="fw-bold opacity-75">{{ pagina }} / {{ totalPaginas }}</span>
+            <button class="btn-page" @click="mudarPagina(1)" :disabled="pagina===totalPaginas"><i class="bi bi-chevron-right"></i></button>
         </div>
         
-        <div class="footer-note">Arquivo gerado via Automação LE</div>
+        <div class="text-center mt-5 text-muted small pb-4">
+            Catálogo atualizado via Automação LE
+        </div>
     </div>
+
+    __BOTAO_DOWNLOAD__
+
 </div>
 
 <script>
-    // AQUI ENTRA A MÁGICA: O Python vai injetar os dados aqui dentro
     const musicas = __DADOS_AQUI__;
     
     const { createApp } = Vue;
     createApp({
-        data() { return { db: musicas, busca: '', pagina: 1, porPagina: 50 } },
+        data() { return { 
+            db: musicas, 
+            busca: '', 
+            pagina: 1, 
+            porPagina: 50,
+            isDark: true
+        }},
+        mounted() {
+            // Verifica preferencia do usuario
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                this.isDark = savedTheme === 'dark';
+            }
+            this.applyTheme();
+        },
         computed: {
             listaFiltrada() {
                 if (!this.busca) return this.db;
@@ -110,8 +214,16 @@ HTML_OFFLINE_TEMPLATE = """
             }
         },
         methods: {
-            copiar(texto) { navigator.clipboard.writeText(texto).then(() => alert('Código copiado: ' + texto)); },
-            mudarPagina(d) { this.pagina += d; window.scrollTo(0, 0); }
+            copiar(texto) { navigator.clipboard.writeText(texto).then(() => alert('Código ' + texto + ' copiado!')); },
+            mudarPagina(d) { this.pagina += d; window.scrollTo(0, 0); },
+            toggleTheme() {
+                this.isDark = !this.isDark;
+                this.applyTheme();
+                localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+            },
+            applyTheme() {
+                document.documentElement.setAttribute('data-bs-theme', this.isDark ? 'dark' : 'light');
+            }
         }
     }).mount('#app');
 </script>
@@ -151,21 +263,23 @@ CACHE_MUSICAS = processar_pdf()
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_ONLINE, qtd=len(CACHE_MUSICAS))
+    # Renderiza o site com o botão de download
+    dados_json = json.dumps(CACHE_MUSICAS)
+    btn_html = '<a href="/baixar" class="fab-download" title="Baixar Catálogo Offline"><i class="bi bi-download"></i></a>'
+    
+    return HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json).replace('__BOTAO_DOWNLOAD__', btn_html)
 
 @app.route('/baixar')
 def baixar():
-    # Converte a lista de músicas para texto JSON
+    # Renderiza o site SEM o botão de download (versão final limpa)
     dados_json = json.dumps(CACHE_MUSICAS)
     
-    # Coloca os dados dentro do template HTML
-    html_final = HTML_OFFLINE_TEMPLATE.replace('__DADOS_AQUI__', dados_json)
+    html_final = HTML_TEMPLATE.replace('__DADOS_AQUI__', dados_json).replace('__BOTAO_DOWNLOAD__', '')
     
-    # Força o navegador a baixar como arquivo
     return Response(
         html_final,
         mimetype="text/html",
-        headers={"Content-disposition": "attachment; filename=catalogo_karaoke.html"}
+        headers={"Content-disposition": "attachment; filename=Catalogo_Karaoke_App.html"}
     )
 
 if __name__ == '__main__':
