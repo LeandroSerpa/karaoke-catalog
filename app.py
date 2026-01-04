@@ -35,7 +35,6 @@ HTML_TEMPLATE = """
             --text-light: #1e293b;
             
             --accent: #38bdf8; /* Azul Neon */
-            --accent-glow: 0 0 15px rgba(56, 189, 248, 0.4);
             --code-bg: #0369a1;
         }
 
@@ -72,7 +71,6 @@ HTML_TEMPLATE = """
             overflow: hidden;
         }
         
-        /* NOVO ÍCONE DE LEÃO (MAJESTOSO) */
         .lion-icon {
             width: 110px; height: 110px;
             fill: var(--accent);
@@ -108,35 +106,45 @@ HTML_TEMPLATE = """
         }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25); }
 
-        /* BARRA ALFABÉTICA (SCROLL HORIZONTAL) */
+        /* BARRA ALFABÉTICA COM CONTADORES */
         .alphabet-bar {
             display: flex;
             overflow-x: auto;
             gap: 8px;
             padding: 15px;
-            -webkit-overflow-scrolling: touch; /* Suave no iPhone */
-            scrollbar-width: none; /* Firefox */
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
-        .alphabet-bar::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+        .alphabet-bar::-webkit-scrollbar { display: none; }
         
         .letter-btn {
             flex: 0 0 auto;
-            width: 40px; height: 40px;
+            /* Largura automática para caber o número */
+            min-width: 45px; height: 40px; 
+            padding: 0 15px;
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.1);
             background: rgba(30, 41, 59, 0.6);
             color: #94a3b8;
-            font-weight: bold; font-size: 1.1rem;
+            font-weight: bold; font-size: 0.95rem;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s;
+            white-space: nowrap; /* Não quebra linha */
         }
         .letter-btn.active {
             background: var(--accent);
             color: #0f172a;
             box-shadow: 0 0 10px var(--accent);
             border-color: var(--accent);
-            transform: scale(1.1);
+            transform: scale(1.05);
         }
+        .letter-count {
+            font-size: 0.75rem;
+            margin-left: 5px;
+            opacity: 0.7;
+            font-weight: normal;
+        }
+        .letter-btn.active .letter-count { opacity: 1; font-weight: bold; }
 
         /* LISTA */
         .card-music { 
@@ -152,7 +160,6 @@ HTML_TEMPLATE = """
         }
         .title { font-weight: 600; font-size: 1rem; line-height: 1.2; color: inherit; }
 
-        /* BOTÃO CÓDIGO */
         .code-btn {
             background: var(--code-bg); color: white;
             padding: 6px 12px; border-radius: 6px;
@@ -207,13 +214,15 @@ HTML_TEMPLATE = """
     </div>
 
     <div class="alphabet-bar">
-        <div class="letter-btn" :class="{active: filtroLetra === ''}" @click="filtrarLetra('')">TODOS</div>
+        <div class="letter-btn" :class="{active: filtroLetra === ''}" @click="filtrarLetra('')">
+            TODOS <span class="letter-count">({{ db.length }})</span>
+        </div>
         <div class="letter-btn" v-for="letra in alfabeto" :class="{active: filtroLetra === letra}" @click="filtrarLetra(letra)">
-            {{ letra }}
+            {{ letra }} <span class="letter-count" v-if="mapaContagem[letra]">({{ mapaContagem[letra] }})</span>
         </div>
     </div>
     
-    <div class="text-center mt-2 small opacity-75">{{ listaFiltrada.length }} músicas encontradas</div>
+    <div class="text-center mt-2 small opacity-75">{{ listaFiltrada.length }} músicas exibidas</div>
 
     <div class="container">
         <div v-for="m in listaPaginada" :key="m.c" class="card-music">
@@ -264,15 +273,25 @@ HTML_TEMPLATE = """
             this.applyTheme();
         },
         computed: {
+            // Cria um mapa com a contagem de cada letra (Ex: { 'A': 50, 'B': 100 })
+            mapaContagem() {
+                const map = {};
+                this.db.forEach(m => {
+                    if(m.a) {
+                        const primeiraLetra = m.a.charAt(0).toUpperCase();
+                        if(!map[primeiraLetra]) map[primeiraLetra] = 0;
+                        map[primeiraLetra]++;
+                    }
+                });
+                return map;
+            },
             listaFiltrada() {
                 let resultado = this.db;
                 
-                // Filtro por Letra (Abas)
                 if (this.filtroLetra) {
                     resultado = resultado.filter(m => m.a.toUpperCase().startsWith(this.filtroLetra));
                 }
                 
-                // Filtro por Texto (Busca)
                 if (this.busca) {
                     const t = this.busca.toLowerCase();
                     resultado = resultado.filter(m => m.a.toLowerCase().includes(t) || m.m.toLowerCase().includes(t) || m.c.includes(t));
@@ -291,11 +310,11 @@ HTML_TEMPLATE = """
             mudarPagina(d) { this.pagina += d; window.scrollTo(0, 0); },
             filtrarLetra(letra) {
                 this.filtroLetra = letra;
-                this.busca = ''; // Limpa a busca ao clicar na letra
+                this.busca = ''; 
                 this.pagina = 1;
             },
             limparLetra() {
-                if(this.busca) this.filtroLetra = ''; // Tira a seleção da letra se digitar na busca
+                if(this.busca) this.filtroLetra = ''; 
                 this.pagina = 1;
             },
             toggleTheme() {
