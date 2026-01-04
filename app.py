@@ -40,7 +40,7 @@ HTML_TEMPLATE = """
             font-family: 'Segoe UI', Roboto, sans-serif;
             color: var(--text-main);
             overflow-x: hidden;
-            user-select: none; /* Bloqueia seleção de texto */
+            user-select: none;
         }
 
         [data-bs-theme="light"] body {
@@ -114,7 +114,7 @@ HTML_TEMPLATE = """
         .btn-fav-filter { background: #330000; border-color: #ff4444; color: #ff4444; }
         .btn-fav-filter.active { background: #ff4444; color: white; border-color: #ff4444; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
 
-        /* LISTA DE MÚSICAS */
+        /* LISTA */
         .card-music { 
             background: var(--card-bg); 
             margin: 10px auto; padding: 15px 15px; border-radius: 10px; 
@@ -122,7 +122,7 @@ HTML_TEMPLATE = """
             max-width: 800px; border-left: 4px solid var(--accent);
         }
         
-        /* ÁREA DE TEXTO (Esquerda) */
+        /* ÁREA DE TEXTO */
         .info-col {
             flex: 1; 
             padding-right: 15px; 
@@ -133,7 +133,7 @@ HTML_TEMPLATE = """
 
         /* 1. ARTISTA (Dourado) */
         .music-artist {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--accent); 
             font-weight: 700;
             text-transform: uppercase;
@@ -141,30 +141,30 @@ HTML_TEMPLATE = """
         }
         [data-bs-theme="light"] .music-artist { color: #b89c08; }
 
-        /* 2. MÚSICA (Branco - Destaque) */
+        /* 2. MÚSICA (Branco) */
         .music-title {
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: #ffffff;
             line-height: 1.25;
-            margin-bottom: 2px;
-            white-space: normal; /* Quebra de linha permitida */
+            margin-bottom: 3px;
+            white-space: normal;
         }
         [data-bs-theme="light"] .music-title { color: #000; }
 
-        /* 3. TRECHO DA LETRA (Cinza - Texto Puro) */
-        .music-lyrics-snippet {
+        /* 3. TRECHO DA LETRA (Aparece o texto real da coluna do PDF) */
+        .music-lyrics-text {
             font-size: 0.75rem;
             color: #777;
             font-weight: 400;
             font-style: italic;
             white-space: normal;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 linhas se for muito grande */
+            -webkit-line-clamp: 2; /* Mostra até 2 linhas */
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        [data-bs-theme="light"] .music-lyrics-snippet { color: #666; }
+        [data-bs-theme="light"] .music-lyrics-text { color: #666; }
 
         /* AÇÕES (Direita) */
         .card-actions { 
@@ -174,7 +174,6 @@ HTML_TEMPLATE = """
             gap: 12px; 
         }
         
-        /* Botões de Ícone */
         .btn-icon { 
             font-size: 1.4rem; color: #555; transition: 0.2s; cursor: pointer; text-decoration: none;
             padding: 5px;
@@ -193,7 +192,6 @@ HTML_TEMPLATE = """
 
         @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-        /* PAGINAÇÃO */
         .pagination { justify-content: center; margin-top: 25px; display: flex; gap: 10px; align-items: center; }
         .btn-page { width: 45px; height: 45px; border-radius: 50%; border: none; background: #333; color: white; font-size: 1.2rem; }
         .btn-page:hover:not(:disabled) { background: var(--accent); color: black; }
@@ -248,8 +246,7 @@ HTML_TEMPLATE = """
                 
                 <div class="music-title">{{ m.m }}</div>
                 
-                <div class="music-lyrics-snippet" v-if="m.l">{{ m.l }}</div>
-                <div class="music-lyrics-snippet" v-else>Letra da música</div>
+                <div class="music-lyrics-text" v-if="m.l && m.l.length > 2">{{ m.l }}...</div>
             </div>
             
             <div class="card-actions">
@@ -369,13 +366,15 @@ def processar_pdf():
                 match = pattern.search(linha)
                 if match:
                     artista_cru = match.group(1).strip()
-                    # Bloqueia "UM" e outros lixos comuns de cabeçalho
-                    if artista_cru.upper() == "UM" or len(artista_cru) < 2: continue
+                    
+                    # CORREÇÃO: Remove apenas "UM" (número de página) mas deixa números reais
+                    if artista_cru.upper() == "UM": continue
                     
                     codigo = match.group(2).strip()
                     
-                    # Tenta separar Título da Letra (quebra por espaço duplo se houver)
+                    # CORREÇÃO: Separa Título e Letra usando espaços duplos
                     resto = match.group(3).strip()
+                    # Procura por 2 ou mais espaços para dividir as colunas
                     partes = re.split(r'\s{2,}', resto, maxsplit=1)
                     titulo = partes[0]
                     letra_snippet = partes[1] if len(partes) > 1 else ""
@@ -385,7 +384,7 @@ def processar_pdf():
                             "a": artista_cru, 
                             "c": codigo, 
                             "m": titulo,
-                            "l": letra_snippet # Campo novo: Letra
+                            "l": letra_snippet # Passa a letra real do PDF
                         })
                         vistos.add(codigo)
         lista.sort(key=lambda x: x['a'].lower())
