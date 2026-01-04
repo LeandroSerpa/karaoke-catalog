@@ -13,7 +13,7 @@ PDF_FILE = "catalogo.pdf"
 # O sistema procura sua logo aqui (nesta ordem de prioridade)
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE (VERSÃO FINAL LUPA) ---
+# --- LAYOUT HTML/VUE (VERSÃO FINAL 2.0) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -135,7 +135,7 @@ HTML_TEMPLATE = """
 
         .card-actions { display: flex; gap: 12px; align-items: center; }
         
-        /* Ícones (Coração e Lupa) */
+        /* Ícones */
         .btn-icon { 
             font-size: 1.3rem; color: #666; transition: 0.2s; cursor: pointer; text-decoration: none;
         }
@@ -227,7 +227,7 @@ HTML_TEMPLATE = """
             <button class="btn-page" @click="mudarPagina(1)" :disabled="pagina===totalPaginas">❯</button>
         </div>
         
-        <div class="text-center mt-4 text-muted small">Catálogo Karaokê Oficial</div>
+        <div class="text-center mt-4 text-muted small">Karaokê - Catálogo Oficial</div>
     </div>
 
     __BOTAO_DOWNLOAD__
@@ -275,6 +275,8 @@ HTML_TEMPLATE = """
             limparLetra() { if(this.busca) this.filtroLetra = ''; this.pagina = 1; },
             toggleTheme() { this.isDark = !this.isDark; this.applyTheme(); localStorage.setItem('theme', this.isDark ? 'dark' : 'light'); },
             applyTheme() { document.documentElement.setAttribute('data-bs-theme', this.isDark ? 'dark' : 'light'); },
+            
+            // FAVORITOS
             isFavorito(c) { return this.favoritos.includes(c); },
             toggleFavorito(m) { 
                 this.isFavorito(m.c) ? this.favoritos = this.favoritos.filter(c => c !== m.c) : this.favoritos.push(m.c); 
