@@ -13,7 +13,7 @@ PDF_FILE = "catalogo.pdf"
 # O sistema procura sua logo aqui
 NOME_IMAGEM = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-# --- LAYOUT HTML/VUE (VERSÃO FINAL - VISUAL AJUSTADO) ---
+# --- LAYOUT HTML/VUE (VERSÃO FINAL - HIERARQUIA DE TEXTO) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="dark">
@@ -93,7 +93,7 @@ HTML_TEMPLATE = """
         [data-bs-theme="light"] .form-control-lg { background: #fff; color: #333; border: 1px solid #ccc; }
         .form-control-lg:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2); }
 
-        /* ABAS A-Z */
+        /* ABAS A-Z RESPONSIVAS */
         .alphabet-bar {
             display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 15px 10px;
         }
@@ -115,34 +115,55 @@ HTML_TEMPLATE = """
         .btn-fav-filter { background: #330000; border-color: #ff4444; color: #ff4444; }
         .btn-fav-filter.active { background: #ff4444; color: white; border-color: #ff4444; box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
 
-        /* LISTA DE MÚSICAS - AQUI MUDOU O VISUAL */
+        /* CARD DE MÚSICA - ESTRUTURA E CORES */
         .card-music { 
             background: var(--card-bg); 
-            margin: 10px auto; padding: 12px 15px; border-radius: 10px; 
+            margin: 10px auto; padding: 15px 15px; border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
             max-width: 800px; border-left: 4px solid var(--accent);
         }
         
-        /* Estilo do Título da Música (EM CIMA) */
-        .music-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #ffffff; /* Branco para destaque */
-            line-height: 1.2;
-            margin-bottom: 4px; /* Espaço para o texto de baixo */
+        .info-col {
+            flex: 1; 
+            padding-right: 10px; 
+            display: flex; 
+            flex-direction: column;
+            gap: 2px; /* Espaço entre as linhas */
         }
-        [data-bs-theme="light"] .music-title { color: #000; }
 
-        /* Estilo do Artista/Texto (EM BAIXO) */
+        /* 1. NOME DO ARTISTA (Dourado) */
         .music-artist {
-            font-size: 0.8rem;
-            color: var(--accent); /* Dourado */
-            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--accent); 
+            font-weight: 700;
             text-transform: uppercase;
-            opacity: 0.9;
+            letter-spacing: 0.5px;
         }
         [data-bs-theme="light"] .music-artist { color: #b89c08; }
 
+        /* 2. NOME DA MÚSICA (Branco) */
+        .music-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+        [data-bs-theme="light"] .music-title { color: #000; }
+
+        /* 3. VER LETRA (Azul) */
+        .music-lyrics-link {
+            font-size: 0.8rem;
+            color: #4285F4; /* Azul Google */
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            margin-top: 3px;
+        }
+        .music-lyrics-link:hover { text-decoration: underline; color: #69a1ff; }
+        .music-lyrics-link i { margin-left: 4px; font-size: 0.75rem; }
+
+        /* BOTÕES DIREITA */
         .code-btn {
             background: #0d6efd; color: white;
             padding: 8px 10px; border-radius: 6px; font-weight: 900; font-size: 1.1rem;
@@ -150,12 +171,12 @@ HTML_TEMPLATE = """
         }
         .code-label { font-size: 0.55rem; text-align: center; opacity: 0.6; margin-top: 3px; text-transform: uppercase; }
 
-        .card-actions { display: flex; gap: 12px; align-items: center; }
+        .card-actions { display: flex; gap: 15px; align-items: center; }
         
         .btn-icon { 
-            font-size: 1.3rem; color: #666; transition: 0.2s; cursor: pointer; text-decoration: none;
+            font-size: 1.4rem; color: #666; transition: 0.2s; cursor: pointer; text-decoration: none;
         }
-        .btn-icon:hover { color: var(--accent); transform: scale(1.1); }
+        .btn-icon:hover { color: #ff4444; transform: scale(1.1); }
         .btn-icon.is-fav { color: #ff4444; animation: heartbeat 0.5s; }
         
         @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
@@ -210,9 +231,16 @@ HTML_TEMPLATE = """
     <div class="container pb-5">
         <div v-for="m in listaPaginada" :key="m.c" class="card-music">
             
-            <div style="flex: 1; padding-right: 10px; display: flex; flex-direction: column;">
-                <div class="music-title">{{ m.m }}</div>
+            <div class="info-col">
                 <div class="music-artist">{{ m.a }}</div>
+                
+                <div class="music-title">{{ m.m }}</div>
+                
+                <a :href="'https://www.google.com/search?q=letra+' + m.a + '+' + m.m" 
+                   target="_blank" 
+                   class="music-lyrics-link">
+                   Ver letra da música <i class="bi bi-search"></i>
+                </a>
             </div>
             
             <div class="card-actions">
@@ -220,11 +248,6 @@ HTML_TEMPLATE = """
                    :class="isFavorito(m.c) ? 'bi-heart-fill is-fav' : 'bi-heart'"
                    @click="toggleFavorito(m)"
                    title="Favoritar"></i>
-                
-                <a :href="'https://www.google.com/search?q=letra+' + m.a + '+' + m.m" 
-                   target="_blank" 
-                   class="bi bi-search btn-icon" 
-                   title="Buscar Letra"></a>
 
                 <div @click="copiar(m.c)">
                     <div class="code-btn">{{ m.c }}</div>
@@ -292,8 +315,6 @@ HTML_TEMPLATE = """
             limparLetra() { if(this.busca) this.filtroLetra = ''; this.pagina = 1; },
             toggleTheme() { this.isDark = !this.isDark; this.applyTheme(); localStorage.setItem('theme', this.isDark ? 'dark' : 'light'); },
             applyTheme() { document.documentElement.setAttribute('data-bs-theme', this.isDark ? 'dark' : 'light'); },
-            
-            // FAVORITOS
             isFavorito(c) { return this.favoritos.includes(c); },
             toggleFavorito(m) { 
                 this.isFavorito(m.c) ? this.favoritos = this.favoritos.filter(c => c !== m.c) : this.favoritos.push(m.c); 
